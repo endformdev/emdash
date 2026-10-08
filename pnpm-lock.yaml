@@ -374,6 +374,9 @@ importers:
       emdash:
         specifier: workspace:*
         version: link:packages/core
+      endform:
+        specifier: 0.81.3
+        version: 0.81.3
       knip:
         specifier: ^5.84.1
         version: 5.84.1(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@24.10.13)(typescript@6.0.0-beta)
@@ -395,6 +398,9 @@ importers:
       prettier-plugin-astro:
         specifier: ^0.14.1
         version: 0.14.1
+      tsx:
+        specifier: 4.21.0
+        version: 4.21.0
       typescript:
         specifier: 6.0.0-beta
         version: 6.0.0-beta
@@ -13265,6 +13271,41 @@ packages:
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
+  endform-darwin-arm64@0.81.3:
+    resolution: {integrity: sha512-BV3Ji195mR8GnxTbz+FDBS2wPKymW0o/xzxGz4TbWU0IdD4FLLsx4TZBm/VVEvkrnHnxXeJQhAaN2L+m4YTHVw==}
+    cpu: [arm64]
+    os: [darwin]
+
+  endform-darwin-x86@0.81.3:
+    resolution: {integrity: sha512-w9/t/7X09tzGN5CQMISWXPYr5axRbqbAwjSTq0MWwZCF+sq25SjbSppllqzfCGAgieHJdmiMft6/RffRzAlmcg==}
+    cpu: [x64]
+    os: [darwin]
+
+  endform-linux-arm64@0.81.3:
+    resolution: {integrity: sha512-YR0FMjgx66Y3IwX/8ZvBtooqTKt05GwHjKKuc14raYK+0c3qxArjP/jU/eyjhAc3ybd8YQ9jcTQjszvc8cf9OA==}
+    cpu: [arm64]
+    os: [linux]
+
+  endform-linux-x86@0.81.3:
+    resolution: {integrity: sha512-TVahPFdCvq2dbyO7WtUjcbmHLNT+dXKB1YImEQ7gDXTLpv9AOigpkN8jYmK1SXgNHiwpibM7dGQYULOLw+oEDg==}
+    cpu: [x64]
+    os: [linux]
+
+  endform-win32-arm64@0.81.3:
+    resolution: {integrity: sha512-etfYsOPqesPE1RIxzHKBPy/aICoFcCd1rCkPUw3xRBMZsCwYDHMFC/awrRN8d7Bav98T6ht4jyI8k07tsbVruQ==}
+    cpu: [arm64]
+    os: [win32]
+
+  endform-win32-x86@0.81.3:
+    resolution: {integrity: sha512-2Oz2ys88AS5GbuyUvpUq5KdtPIv6I0DxRiwf+mWd/Onh2diPoTGD/cfZyU3GYF3GYtWFXmc7OKbEOeZiVeDRDw==}
+    cpu: [x64]
+    os: [win32]
+
+  endform@0.81.3:
+    resolution: {integrity: sha512-VnlmxakSs1u7N1CjOp1hRtCDcBnmNwUH9UALAoxG2LRU3fWpUJ5lNw0s7cARqZTn5OM9F0iJYBvnlaRrOICApw==}
+    hasBin: true
+
+
 snapshots:
 
   '@adraffy/ens-normalize@1.11.1': {}
@@ -24507,3 +24548,30 @@ snapshots:
       tslib: 2.3.0
 
   zwitch@2.0.4: {}
+
+  endform-darwin-arm64@0.81.3:
+    optional: true
+
+  endform-darwin-x86@0.81.3:
+    optional: true
+
+  endform-linux-arm64@0.81.3:
+    optional: true
+
+  endform-linux-x86@0.81.3:
+    optional: true
+
+  endform-win32-arm64@0.81.3:
+    optional: true
+
+  endform-win32-x86@0.81.3:
+    optional: true
+
+  endform@0.81.3:
+    optionalDependencies:
+      endform-darwin-arm64: 0.81.3
+      endform-darwin-x86: 0.81.3
+      endform-linux-arm64: 0.81.3
+      endform-linux-x86: 0.81.3
+      endform-win32-arm64: 0.81.3
+      endform-win32-x86: 0.81.3

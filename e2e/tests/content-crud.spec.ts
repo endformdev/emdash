@@ -19,6 +19,7 @@ const CONTENT_ID_PATTERN = /\/content\/posts\/[A-Z0-9]+(?:\?.*)?$/;
 const NEW_CONTENT_URL_PATTERN = /\/content\/posts\/new(?:[?#].*)?$/;
 
 test.describe("Content CRUD", () => {
+	test.describe.configure({ mode: "serial" });
 	test.beforeEach(async ({ admin }) => {
 		await admin.devBypassAuth();
 	});

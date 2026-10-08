@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const isEndform = process.env.ENDFORM === "true";
+
 /**
  * Playwright E2E test configuration for EmDash CMS
  *
@@ -11,8 +13,8 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
 	testDir: "./e2e/tests",
 	testIgnore: "portable-text-table.spec.ts",
-	// Disable parallel to avoid shared database state issues
-	fullyParallel: false,
+	// Endform limits concurrency around the shared fixture in endform.config.ts.
+	fullyParallel: isEndform,
 	workers: 1,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 1 : 0,
@@ -23,12 +25,20 @@ export default defineConfig({
 	// first hit; give it headroom so cold compilation doesn't time out specs.
 	timeout: process.env.EMDASH_E2E_TARGET === "cloudflare" ? 90_000 : 30000,
 
-	globalSetup: "./e2e/global-setup.ts",
-	globalTeardown: "./e2e/global-teardown.ts",
+	globalSetup: isEndform ? undefined : "./e2e/global-setup.ts",
+	globalTeardown: isEndform ? undefined : "./e2e/global-teardown.ts",
+	webServer: isEndform
+		? {
+				command: "pnpm exec tsx e2e/endform-server.ts",
+				url: "http://127.0.0.1:4446/ready",
+				reuseExistingServer: false,
+				timeout: 240_000,
+			}
+		: undefined,
 
 	use: {
-		baseURL: "http://localhost:4444",
-		trace: "on-first-retry",
+		baseURL: process.env.BASE_URL || "http://localhost:4444",
+		trace: "retain-on-failure",
 		screenshot: "only-on-failure",
 	},
 
@@ -38,6 +48,4 @@ export default defineConfig({
 			use: { ...devices["Desktop Chrome"] },
 		},
 	],
-
-	// No webServer — global-setup.ts handles server lifecycle
 });
