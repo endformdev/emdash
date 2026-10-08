@@ -451,7 +451,9 @@ jobs:
         if: ${{ !cancelled() && steps.node-build.outcome == 'success' }}
         run: |
           ENDFORM=false pnpm exec playwright test --list --reporter=list --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} > "$RUNNER_TEMP/emdash-test-list.txt"
-          npx endform@latest test --organization-id 2G1ZCj7X --test-list "$RUNNER_TEMP/emdash-test-list.txt"
+          options=()
+          if [ "${{ matrix.shardIndex }}" = "1" ]; then options+=(--max-failures 1); fi
+          npx endform@latest test --organization-id 2G1ZCj7X --test-list "$RUNNER_TEMP/emdash-test-list.txt" "${options[@]}"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure() && steps.node-e2e.outcome == 'failure'
         with:
@@ -465,7 +467,9 @@ jobs:
         if: ${{ !cancelled() && steps.cloudflare-build.outcome == 'success' }}
         run: |
           ENDFORM=false pnpm exec playwright test --list --reporter=list --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} > "$RUNNER_TEMP/emdash-test-list.txt"
-          npx endform@latest test --organization-id 2G1ZCj7X --test-list "$RUNNER_TEMP/emdash-test-list.txt"
+          options=()
+          if [ "${{ matrix.shardIndex }}" = "1" ]; then options+=(--max-failures 1); fi
+          npx endform@latest test --organization-id 2G1ZCj7X --test-list "$RUNNER_TEMP/emdash-test-list.txt" "${options[@]}"
         env:
           EMDASH_E2E_TARGET: cloudflare
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
