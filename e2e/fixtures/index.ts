@@ -6,13 +6,14 @@
  * the AdminPage helper and server context to each test.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { test as base } from "@playwright/test";
 
 import { AdminPage } from "./admin";
+import { warmUpAdmin } from "./warm-up-admin.js";
 
 export { AdminPage } from "./admin";
 
@@ -40,7 +41,29 @@ function getServerInfo(): ServerInfo {
 export const test = base.extend<{
 	admin: AdminPage;
 	serverInfo: ServerInfo;
+	_endformServerState: void;
 }>({
+	page: [
+		async ({ page }, use) => {
+			if (process.env.ENDFORM === "true") {
+				await warmUpAdmin(page, process.env.BASE_URL || "http://localhost:4444");
+			}
+			await use(page);
+		},
+		{ timeout: 240_000 },
+	],
+	_endformServerState: [
+		// oxlint-disable-next-line no-empty-pattern -- Playwright requires destructured fixture dependencies
+		async ({}, use) => {
+			if (process.env.ENDFORM === "true") {
+				const response = await fetch("http://localhost:4446/server-info");
+				if (!response.ok) throw new Error("Unable to load fixture server state");
+				writeFileSync(SERVER_INFO_PATH, await response.text());
+			}
+			await use();
+		},
+		{ auto: true },
+	],
 	// eslint-disable-next-line no-empty-pattern
 	serverInfo: async ({}, use) => {
 		await use(getServerInfo());

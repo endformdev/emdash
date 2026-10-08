@@ -13,6 +13,8 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
+import { warmUpAdmin } from "./fixtures/warm-up-admin.js";
+
 const execAsync = promisify(execFile);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -291,31 +293,6 @@ async function seedTestData(
 	};
 }
 
-async function warmUpAdmin(baseUrl: string): Promise<void> {
-	const { chromium } = await import("@playwright/test");
-	const browser = await chromium.launch();
-	try {
-		const page = await browser.newPage();
-		// The second load starts after any optimizer reload from the first, so
-		// its hydration means the dependency set has settled.
-		for (let load = 0; load < 2; load++) {
-			try {
-				await page.goto(`${baseUrl}/_emdash/admin/login`, {
-					waitUntil: "commit",
-					timeout: 120_000,
-				});
-				await page.waitForSelector("astro-island:not([ssr])", { timeout: 120_000 });
-				await page.waitForLoadState("networkidle", { timeout: 60_000 });
-			} catch (error) {
-				// Non-fatal: a cold first admin test can still pass on retry.
-				console.warn(`[pw] Admin warm-up load ${load + 1} failed:`, error);
-			}
-		}
-	} finally {
-		await browser.close();
-	}
-}
-
 // ---------------------------------------------------------------------------
 // Global setup
 // ---------------------------------------------------------------------------
@@ -429,7 +406,15 @@ export default async function globalSetup(): Promise<void> {
 		// discovered when a browser requests them, and the optimizer then forces
 		// a full reload that would otherwise land inside the first admin test.
 		console.log("[pw] Warming up admin...");
-		await warmUpAdmin(baseUrl);
+		if (process.env.ENDFORM !== "true") {
+			const { chromium } = await import("@playwright/test");
+			const browser = await chromium.launch();
+			try {
+				await warmUpAdmin(await browser.newPage(), baseUrl);
+			} finally {
+				await browser.close();
+			}
+		}
 
 		// 6. Write server info
 		const info = {

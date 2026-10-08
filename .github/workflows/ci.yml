@@ -412,13 +412,19 @@ jobs:
       - run: echo "E2E results are aggregated by the Tests job"
 
   test-e2e:
-    name: E2E shard (${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+    name: E2E Endform shard (${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
     needs: change-plan
     if: needs.change-plan.outputs.e2e_node == 'true' || needs.change-plan.outputs.e2e_cloudflare == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      ENDFORM_GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+      ENDFORM_GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
         shardTotal: [8]
@@ -440,22 +446,18 @@ jobs:
         id: cloudflare-build
         if: ${{ !cancelled() && needs.change-plan.outputs.e2e_cloudflare == 'true' }}
         run: pnpm run --filter "emdash-e2e-fixture-cloudflare..." build
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: ${{ !cancelled() && (steps.node-build.outcome == 'success' || steps.cloudflare-build.outcome == 'success') }}
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ hashFiles('pnpm-lock.yaml') }}
-      - run: pnpm exec playwright install --with-deps chromium
-        if: ${{ !cancelled() && (steps.node-build.outcome == 'success' || steps.cloudflare-build.outcome == 'success') && steps.playwright-cache.outputs.cache-hit != 'true' }}
       - name: Run Node E2E
         id: node-e2e
         if: ${{ !cancelled() && steps.node-build.outcome == 'success' }}
-        run: pnpm exec playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        run: |
+          ENDFORM=false pnpm exec playwright test --list --reporter=list --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} > "$RUNNER_TEMP/emdash-test-list.txt"
+          options=()
+          if [ "${{ matrix.shardIndex }}" = "1" ]; then options+=(--max-failures 1); fi
+          npx endform@latest test --organization-id 2G1ZCj7X --test-list "$RUNNER_TEMP/emdash-test-list.txt" "${options[@]}"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure() && steps.node-e2e.outcome == 'failure'
         with:
-          name: playwright-report-node-${{ matrix.shardIndex }}
+          name: playwright-report-node-endform-${{ matrix.shardIndex }}
           path: |
             playwright-report/
             test-results/
@@ -463,13 +465,17 @@ jobs:
       - name: Run Cloudflare E2E
         id: cloudflare-e2e
         if: ${{ !cancelled() && steps.cloudflare-build.outcome == 'success' }}
-        run: pnpm exec playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        run: |
+          ENDFORM=false pnpm exec playwright test --list --reporter=list --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} > "$RUNNER_TEMP/emdash-test-list.txt"
+          options=()
+          if [ "${{ matrix.shardIndex }}" = "1" ]; then options+=(--max-failures 1); fi
+          npx endform@latest test --organization-id 2G1ZCj7X --test-list "$RUNNER_TEMP/emdash-test-list.txt" "${options[@]}"
         env:
           EMDASH_E2E_TARGET: cloudflare
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure() && steps.cloudflare-e2e.outcome == 'failure'
         with:
-          name: playwright-report-cloudflare-${{ matrix.shardIndex }}
+          name: playwright-report-cloudflare-endform-${{ matrix.shardIndex }}
           path: |
             playwright-report/
             test-results/
