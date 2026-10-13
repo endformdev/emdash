@@ -375,8 +375,8 @@ importers:
         specifier: workspace:*
         version: link:packages/core
       endform:
-        specifier: 0.81.3
-        version: 0.81.3
+        specifier: 0.81.4
+        version: 0.81.4
       knip:
         specifier: ^5.84.1
         version: 5.84.1(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@24.10.13)(typescript@6.0.0-beta)
@@ -13271,40 +13271,39 @@ packages:
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
-  endform-darwin-arm64@0.81.3:
-    resolution: {integrity: sha512-BV3Ji195mR8GnxTbz+FDBS2wPKymW0o/xzxGz4TbWU0IdD4FLLsx4TZBm/VVEvkrnHnxXeJQhAaN2L+m4YTHVw==}
+  endform-darwin-arm64@0.81.4:
+    resolution: {integrity: sha512-KZNlY+Wfhe+t4J+QDLwgI9fNSUzILflOLLZRoHyQ0CAyUpEuFPsjkTjMWr/uvlxcGQgxmfk+UGxakcST3qfj5g==}
     cpu: [arm64]
     os: [darwin]
 
-  endform-darwin-x86@0.81.3:
-    resolution: {integrity: sha512-w9/t/7X09tzGN5CQMISWXPYr5axRbqbAwjSTq0MWwZCF+sq25SjbSppllqzfCGAgieHJdmiMft6/RffRzAlmcg==}
+  endform-darwin-x86@0.81.4:
+    resolution: {integrity: sha512-i1Nm9R6ykJuTpGbPa6eC/KyKTyyx0Tlhhvom9cX467JyQQ4weornnWQ9agywcNgYgOCd8QsslkNOnp30mj7Q9w==}
     cpu: [x64]
     os: [darwin]
 
-  endform-linux-arm64@0.81.3:
-    resolution: {integrity: sha512-YR0FMjgx66Y3IwX/8ZvBtooqTKt05GwHjKKuc14raYK+0c3qxArjP/jU/eyjhAc3ybd8YQ9jcTQjszvc8cf9OA==}
+  endform-linux-arm64@0.81.4:
+    resolution: {integrity: sha512-nYauV4GAxmH6S5qIlFcrdhPl2aUfpGgbS0O7BJ9MXGQ+3Rjhgg7g2S9ZK6tHblezoZYHeHg6TL3r2v9XbIzbIg==}
     cpu: [arm64]
     os: [linux]
 
-  endform-linux-x86@0.81.3:
-    resolution: {integrity: sha512-TVahPFdCvq2dbyO7WtUjcbmHLNT+dXKB1YImEQ7gDXTLpv9AOigpkN8jYmK1SXgNHiwpibM7dGQYULOLw+oEDg==}
+  endform-linux-x86@0.81.4:
+    resolution: {integrity: sha512-HOz59BQhVKANp4pCIAlgqxyOTz7wgwUcnM1prQACULq/ixUVNPqrIkXzYYz0xtXC1CsgdW+/32YSoTJfoCUsTw==}
     cpu: [x64]
     os: [linux]
 
-  endform-win32-arm64@0.81.3:
-    resolution: {integrity: sha512-etfYsOPqesPE1RIxzHKBPy/aICoFcCd1rCkPUw3xRBMZsCwYDHMFC/awrRN8d7Bav98T6ht4jyI8k07tsbVruQ==}
+  endform-win32-arm64@0.81.4:
+    resolution: {integrity: sha512-zkiG2ctCXSdTs9VAbOQM7xrbLE0jjTf8pZhc8XlBlYmiaGzqL2+pqWMutuf964Tk7NOQoFs3F6SEyZJe5TBgMg==}
     cpu: [arm64]
     os: [win32]
 
-  endform-win32-x86@0.81.3:
-    resolution: {integrity: sha512-2Oz2ys88AS5GbuyUvpUq5KdtPIv6I0DxRiwf+mWd/Onh2diPoTGD/cfZyU3GYF3GYtWFXmc7OKbEOeZiVeDRDw==}
+  endform-win32-x86@0.81.4:
+    resolution: {integrity: sha512-0EZZd6RolVGmLpaa2299VIzXHocTECzsjw6qydbgov6F+w7h6ebzvGdLNc+0wWnz+G3jdoqjdpf7HhAAJA6Arw==}
     cpu: [x64]
     os: [win32]
 
-  endform@0.81.3:
-    resolution: {integrity: sha512-VnlmxakSs1u7N1CjOp1hRtCDcBnmNwUH9UALAoxG2LRU3fWpUJ5lNw0s7cARqZTn5OM9F0iJYBvnlaRrOICApw==}
+  endform@0.81.4:
+    resolution: {integrity: sha512-PWi2OWQtGVs91u4b3FmB8RkWKekQU8Q523SmowhOFrkbmz6KC+703Ql+LHaXtGsfEmJcG71I/kPQXfhtNBcTVg==}
     hasBin: true
-
 
 snapshots:
 
@@ -24549,29 +24548,29 @@ snapshots:
 
   zwitch@2.0.4: {}
 
-  endform-darwin-arm64@0.81.3:
+  endform-darwin-arm64@0.81.4:
     optional: true
 
-  endform-darwin-x86@0.81.3:
+  endform-darwin-x86@0.81.4:
     optional: true
 
-  endform-linux-arm64@0.81.3:
+  endform-linux-arm64@0.81.4:
     optional: true
 
-  endform-linux-x86@0.81.3:
+  endform-linux-x86@0.81.4:
     optional: true
 
-  endform-win32-arm64@0.81.3:
+  endform-win32-arm64@0.81.4:
     optional: true
 
-  endform-win32-x86@0.81.3:
+  endform-win32-x86@0.81.4:
     optional: true
 
-  endform@0.81.3:
+  endform@0.81.4:
     optionalDependencies:
-      endform-darwin-arm64: 0.81.3
-      endform-darwin-x86: 0.81.3
-      endform-linux-arm64: 0.81.3
-      endform-linux-x86: 0.81.3
-      endform-win32-arm64: 0.81.3
-      endform-win32-x86: 0.81.3
+      endform-darwin-arm64: 0.81.4
+      endform-darwin-x86: 0.81.4
+      endform-linux-arm64: 0.81.4
+      endform-linux-x86: 0.81.4
+      endform-win32-arm64: 0.81.4
+      endform-win32-x86: 0.81.4

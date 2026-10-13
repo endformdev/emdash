@@ -5,6 +5,13 @@ minimumReleaseAge: 1440
 # Scoped to the binaries/runtime only -- @rolldown/pluginutils etc. stay
 # under the cooldown.
 minimumReleaseAgeExclude:
+  - "endform@0.81.4"
+  - "endform-darwin-arm64@0.81.4"
+  - "endform-darwin-x86@0.81.4"
+  - "endform-linux-arm64@0.81.4"
+  - "endform-linux-x86@0.81.4"
+  - "endform-win32-arm64@0.81.4"
+  - "endform-win32-x86@0.81.4"
   - "@rolldown/binding-*"
   - "@emnapi/core"
   - "@emnapi/runtime"

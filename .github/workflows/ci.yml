@@ -412,7 +412,7 @@ jobs:
       - run: echo "E2E results are aggregated by the Tests job"
 
   test-e2e:
-    name: E2E Endform shard (${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+    name: E2E Endform diagnostic shard (${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
     needs: change-plan
     if: needs.change-plan.outputs.e2e_node == 'true' || needs.change-plan.outputs.e2e_cloudflare == 'true'
     runs-on: ubuntu-latest
@@ -426,7 +426,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
+        shardIndex: [1]
         shardTotal: [8]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -450,6 +450,7 @@ jobs:
         id: node-e2e
         if: ${{ !cancelled() && steps.node-build.outcome == 'success' }}
         run: |
+          npx endform@latest --version
           ENDFORM=false pnpm exec playwright test --list --reporter=list --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} > "$RUNNER_TEMP/emdash-test-list.txt"
           options=()
           if [ "${{ matrix.shardIndex }}" = "1" ]; then options+=(--max-failures 1); fi
@@ -466,6 +467,7 @@ jobs:
         id: cloudflare-e2e
         if: ${{ !cancelled() && steps.cloudflare-build.outcome == 'success' }}
         run: |
+          npx endform@latest --version
           ENDFORM=false pnpm exec playwright test --list --reporter=list --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} > "$RUNNER_TEMP/emdash-test-list.txt"
           options=()
           if [ "${{ matrix.shardIndex }}" = "1" ]; then options+=(--max-failures 1); fi

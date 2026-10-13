@@ -50,7 +50,7 @@
 		"@types/node": "catalog:",
 		"@typescript/native-preview": "7.0.0-dev.20260421.2",
 		"emdash": "workspace:*",
-		"endform": "0.81.3",
+		"endform": "0.81.4",
 		"knip": "^5.84.1",
 		"oxfmt": "^0.59.0",
 		"oxlint": "^1.74.0",
