@@ -16,13 +16,16 @@ import emdash from "emdash/astro";
 import { sqlite } from "emdash/db";
 import { installRegistryAuthoritativeFixture } from "emdash/internal/testing/registry";
 
+import { builtTestHelpers } from "../fixtures/built-test-helpers.mjs";
+
 const dbUrl = process.env.EMDASH_TEST_DB || "file:./test.db";
 const marketplaceUrl = process.env.EMDASH_MARKETPLACE_URL || undefined;
 const registryUrl = process.env.EMDASH_REGISTRY_URL || undefined;
 const registryFixturePath = process.env.EMDASH_REGISTRY_FIXTURE;
-if (registryFixturePath) {
-	installRegistryAuthoritativeFixture(JSON.parse(readFileSync(registryFixturePath, "utf8")));
-}
+const registryFixture = registryFixturePath
+	? JSON.parse(readFileSync(registryFixturePath, "utf8"))
+	: null;
+if (registryFixture) installRegistryAuthoritativeFixture(registryFixture);
 const e2eHookNames = new Set([
 	"content:afterSave",
 	"content:beforeDelete",
@@ -108,22 +111,39 @@ export default defineConfig({
 	integrations: [
 		react(),
 		emdash({
+			siteUrl: "http://localhost:4444",
 			database: sqlite({ url: dbUrl }),
 			middleware: { outer: "./src/outer-middleware.ts" },
-			plugins: [colorPlugin()],
+			plugins: [
+				colorPlugin(),
+				...(process.env.EMDASH_E2E_SERVER === "dev"
+					? []
+					: [
+							{
+								id: "emdash-console-email",
+								version: "0.0.0",
+								entrypoint: fileURLToPath(
+									new URL("../fixtures/email-capture-plugin.mjs", import.meta.url),
+								),
+							},
+						]),
+			],
 			sandboxed: [editorExtensionsPlugin, { ...registryTestPlugin, hooks: e2eHooks }, deniedPlugin],
 			marketplace: marketplaceUrl,
-			registry: registryUrl,
+			registry: process.env.EMDASH_E2E_SERVER === "dev" ? registryUrl : false,
 			sandboxRunner: "@emdash-cms/sandbox-workerd",
 		}),
 	],
 	i18n: {
+		routing: "manual",
 		defaultLocale: "en",
 		locales: ["en", "fr", "es"],
 		fallback: { fr: "en", es: "en" },
 	},
 	devToolbar: { enabled: false },
 	vite: {
+		define: { __EMDASH_REGISTRY_FIXTURE__: JSON.stringify(registryFixture) },
+		plugins: [builtTestHelpers()],
 		server: {
 			fs: { strict: false },
 		},

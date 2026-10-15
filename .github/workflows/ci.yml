@@ -412,7 +412,7 @@ jobs:
       - run: echo "E2E results are aggregated by the Tests job"
 
   test-e2e:
-    name: E2E Endform diagnostic shard (${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+    name: E2E built ${{ matrix.runner }} (${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
     needs: change-plan
     if: needs.change-plan.outputs.e2e_node == 'true' || needs.change-plan.outputs.e2e_cloudflare == 'true'
     runs-on: ubuntu-latest
@@ -426,7 +426,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1]
+        runner: [native, endform]
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
         shardTotal: [8]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -450,15 +451,17 @@ jobs:
         id: node-e2e
         if: ${{ !cancelled() && steps.node-build.outcome == 'success' }}
         run: |
-          npx endform@latest --version
-          ENDFORM=false pnpm exec playwright test --list --reporter=list --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} > "$RUNNER_TEMP/emdash-test-list.txt"
-          options=()
-          if [ "${{ matrix.shardIndex }}" = "1" ]; then options+=(--max-failures 1); fi
-          npx endform@latest test --organization-id 2G1ZCj7X --test-list "$RUNNER_TEMP/emdash-test-list.txt" "${options[@]}"
+          if [ "${{ matrix.runner }}" = native ]; then
+            ENDFORM=false pnpm exec playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+          else
+            pnpm exec endform --version
+            ENDFORM=false pnpm exec playwright test --list --reporter=list --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} > "$RUNNER_TEMP/emdash-test-list.txt"
+            pnpm exec endform test --organization-id 2G1ZCj7X --test-list "$RUNNER_TEMP/emdash-test-list.txt"
+          fi
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure() && steps.node-e2e.outcome == 'failure'
         with:
-          name: playwright-report-node-endform-${{ matrix.shardIndex }}
+          name: playwright-report-node-${{ matrix.runner }}-${{ matrix.shardIndex }}
           path: |
             playwright-report/
             test-results/
@@ -467,17 +470,19 @@ jobs:
         id: cloudflare-e2e
         if: ${{ !cancelled() && steps.cloudflare-build.outcome == 'success' }}
         run: |
-          npx endform@latest --version
-          ENDFORM=false pnpm exec playwright test --list --reporter=list --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} > "$RUNNER_TEMP/emdash-test-list.txt"
-          options=()
-          if [ "${{ matrix.shardIndex }}" = "1" ]; then options+=(--max-failures 1); fi
-          npx endform@latest test --organization-id 2G1ZCj7X --test-list "$RUNNER_TEMP/emdash-test-list.txt" "${options[@]}"
+          if [ "${{ matrix.runner }}" = native ]; then
+            ENDFORM=false pnpm exec playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+          else
+            pnpm exec endform --version
+            ENDFORM=false pnpm exec playwright test --list --reporter=list --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} > "$RUNNER_TEMP/emdash-test-list.txt"
+            pnpm exec endform test --organization-id 2G1ZCj7X --test-list "$RUNNER_TEMP/emdash-test-list.txt"
+          fi
         env:
           EMDASH_E2E_TARGET: cloudflare
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure() && steps.cloudflare-e2e.outcome == 'failure'
         with:
-          name: playwright-report-cloudflare-endform-${{ matrix.shardIndex }}
+          name: playwright-report-cloudflare-${{ matrix.runner }}-${{ matrix.shardIndex }}
           path: |
             playwright-report/
             test-results/

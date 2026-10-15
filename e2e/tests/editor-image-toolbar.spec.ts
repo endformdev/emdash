@@ -3,7 +3,7 @@ import type { APIRequestContext } from "@playwright/test";
 import { test, expect } from "../fixtures";
 
 const EDITOR = "#field-body .ProseMirror";
-const IMAGE_URL = "http://media.example.test/editor-toolbar.png";
+const IMAGE_URL = "https://media.example.test/editor-toolbar.png";
 const csrfHeaders = (token: string) => ({
 	Authorization: `Bearer ${token}`,
 	"X-EmDash-Request": "1",

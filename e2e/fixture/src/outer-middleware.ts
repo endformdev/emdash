@@ -1,5 +1,12 @@
 import { defineMiddleware } from "astro:middleware";
+import { installRegistryAuthoritativeFixture } from "emdash/internal/testing/registry";
 import { getRequestContext } from "emdash/request-context";
+
+declare const __EMDASH_REGISTRY_FIXTURE__: unknown;
+
+if (__EMDASH_REGISTRY_FIXTURE__ !== null) {
+	installRegistryAuthoritativeFixture(__EMDASH_REGISTRY_FIXTURE__);
+}
 
 const FINALIZER_NONCE = "outer-finalizer";
 

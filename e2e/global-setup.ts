@@ -1,13 +1,14 @@
 /**
  * Playwright global setup.
  *
- * Starts an isolated Astro dev server from the minimal e2e fixture,
- * runs dev-bypass setup, and seeds test data. Writes server info
+ * Builds and serves the isolated e2e fixture in production mode,
+ * runs fixture-only setup helpers, and seeds test data. Writes server info
  * to a temp file so tests and teardown can find it.
  */
 
 import { execFile, spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,6 +50,7 @@ const TARGETS: Record<string, Target> = {
 
 const TARGET = TARGETS[process.env.EMDASH_E2E_TARGET ?? "node"] ?? TARGETS.node!;
 const FIXTURE_DIR = TARGET.fixtureDir;
+const BUILT_SERVER = process.env.EMDASH_E2E_SERVER !== "dev";
 const CLI_BINARY = resolve(ROOT, "packages/core/dist/cli/index.mjs");
 const PORT = 4444;
 const MARKETPLACE_PORT = 4445;
@@ -298,6 +300,11 @@ async function seedTestData(
 // ---------------------------------------------------------------------------
 
 export default async function globalSetup(): Promise<void> {
+	await new Promise<void>((resolvePort, reject) => {
+		const probe = createServer();
+		probe.once("error", reject);
+		probe.listen(PORT, "127.0.0.1", () => probe.close(() => resolvePort()));
+	});
 	await ensureBuilt();
 	await ensureFixtureDepsBuilt();
 
@@ -329,22 +336,48 @@ export default async function globalSetup(): Promise<void> {
 		rmSync(join(FIXTURE_DIR, ".wrangler"), { recursive: true, force: true });
 	}
 
-	// 2. Start dev server (with marketplace URL injected via env)
+	// 2. Build and serve the fixture with the same isolated data for both runners.
 	const astroBin = join(fixtureNodeModules, ".bin", "astro");
-	const server = spawn(astroBin, ["dev", "--port", String(PORT)], {
-		cwd: workDir,
-		env: {
-			...process.env,
-			// Keep Astro's agent-mode server in this process so teardown owns it.
-			ASTRO_DEV_BACKGROUND: "1",
-			EMDASH_TEST_DB: `file:${dbPath}`,
-			EMDASH_MARKETPLACE_URL: marketplaceUrl,
-			EMDASH_REGISTRY_URL: marketplaceUrl,
-			EMDASH_REGISTRY_FIXTURE: registryFixturePath,
-			EMDASH_ENCRYPTION_KEY: "emdash_enc_v1_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+	const serverEnv = {
+		...process.env,
+		HOST: "127.0.0.1",
+		PORT: String(PORT),
+		ASTRO_DEV_BACKGROUND: "1",
+		ASTRO_PREVIEW_BACKGROUND: "1",
+		EMDASH_TEST_DB: `file:${dbPath}`,
+		EMDASH_MARKETPLACE_URL: marketplaceUrl,
+		EMDASH_REGISTRY_URL: marketplaceUrl,
+		EMDASH_REGISTRY_FIXTURE: registryFixturePath,
+		EMDASH_ENCRYPTION_KEY: "emdash_enc_v1_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+	};
+	if (BUILT_SERVER) {
+		console.log("[pw] Building production fixture...");
+		try {
+			await execAsync(astroBin, ["build"], {
+				cwd: workDir,
+				env: serverEnv,
+				timeout: 240_000,
+				maxBuffer: 10 * 1024 * 1024,
+			});
+		} catch (error) {
+			marketplaceServer.close();
+			rmSync(tempDataDir, { recursive: true, force: true });
+			throw error;
+		}
+	}
+	const standaloneNode = BUILT_SERVER && TARGET.usesTempDb;
+	const server = spawn(
+		standaloneNode ? process.execPath : astroBin,
+		standaloneNode
+			? [join(workDir, "dist/server/entry.mjs")]
+			: [BUILT_SERVER ? "preview" : "dev", "--port", String(PORT)],
+		{
+			cwd: workDir,
+			env: serverEnv,
+			detached: true,
+			stdio: "pipe",
 		},
-		stdio: "pipe",
-	});
+	);
 
 	let serverOutput = "";
 	const appendServerOutput = (data: Buffer) => {
@@ -405,8 +438,8 @@ export default async function globalSetup(): Promise<void> {
 		// 5c. Load the admin in a browser. Its client dependencies are only
 		// discovered when a browser requests them, and the optimizer then forces
 		// a full reload that would otherwise land inside the first admin test.
-		console.log("[pw] Warming up admin...");
-		if (process.env.ENDFORM !== "true") {
+		if (!BUILT_SERVER && process.env.ENDFORM !== "true") {
+			console.log("[pw] Warming up admin...");
 			const { chromium } = await import("@playwright/test");
 			const browser = await chromium.launch();
 			try {
@@ -433,7 +466,7 @@ export default async function globalSetup(): Promise<void> {
 
 		console.log(`[pw] Server ready at ${baseUrl} (pid ${server.pid})`);
 	} catch (error) {
-		server.kill("SIGTERM");
+		process.kill(-server.pid!, "SIGTERM");
 		marketplaceServer.close();
 		throw new Error(
 			`${error instanceof Error ? error.message : String(error)}\n\nServer output:\n${serverOutput}`,

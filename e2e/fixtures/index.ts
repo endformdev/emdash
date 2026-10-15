@@ -45,7 +45,7 @@ export const test = base.extend<{
 }>({
 	page: [
 		async ({ page }, use) => {
-			if (process.env.ENDFORM === "true") {
+			if (process.env.ENDFORM === "true" && process.env.EMDASH_E2E_SERVER === "dev") {
 				await warmUpAdmin(page, process.env.BASE_URL || "http://localhost:4444");
 			}
 			await use(page);

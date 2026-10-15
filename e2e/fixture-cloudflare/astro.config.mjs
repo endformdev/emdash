@@ -16,6 +16,8 @@ import registryTestPlugin from "@emdash-cms/plugin-marketplace-test";
 import { defineConfig } from "astro/config";
 import emdash from "emdash/astro";
 
+import { builtTestHelpers } from "../fixtures/built-test-helpers.mjs";
+
 const marketplaceUrl = process.env.EMDASH_MARKETPLACE_URL || undefined;
 const registryUrl = process.env.EMDASH_REGISTRY_URL || undefined;
 const registryFixturePath = process.env.EMDASH_REGISTRY_FIXTURE;
@@ -80,17 +82,32 @@ export default defineConfig({
 	integrations: [
 		react(),
 		emdash({
+			siteUrl: "http://localhost:4444",
 			database: d1({ binding: "DB" }),
 			middleware: { outer: "./src/outer-middleware.ts" },
 			storage: r2({ binding: "MEDIA" }),
-			plugins: [colorPlugin()],
+			plugins: [
+				colorPlugin(),
+				...(process.env.EMDASH_E2E_SERVER === "dev"
+					? []
+					: [
+							{
+								id: "emdash-console-email",
+								version: "0.0.0",
+								entrypoint: fileURLToPath(
+									new URL("../fixtures/email-capture-plugin.mjs", import.meta.url),
+								),
+							},
+						]),
+			],
 			sandboxed: [{ ...registryTestPlugin, hooks: e2eHooks }, deniedPlugin],
 			marketplace: marketplaceUrl,
-			registry: registryUrl,
+			registry: process.env.EMDASH_E2E_SERVER === "dev" ? registryUrl : false,
 			sandboxRunner: sandbox(),
 		}),
 	],
 	i18n: {
+		routing: "manual",
 		defaultLocale: "en",
 		locales: ["en", "fr", "es"],
 		fallback: { fr: "en", es: "en" },
@@ -100,7 +117,7 @@ export default defineConfig({
 		define: {
 			__EMDASH_REGISTRY_FIXTURE__: JSON.stringify(registryFixture),
 		},
-		plugins: [lateManifestImport],
+		plugins: [builtTestHelpers(), lateManifestImport],
 		server: {
 			fs: { strict: false },
 		},

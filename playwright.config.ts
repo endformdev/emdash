@@ -6,8 +6,8 @@ const isEndform = process.env.ENDFORM === "true";
  * Playwright E2E test configuration for EmDash CMS
  *
  * Tests run against an isolated fixture (not a demo app).
- * Global setup creates a temp directory, starts a fresh dev server,
- * runs setup via dev-bypass, and seeds collections with test data.
+ * Global setup builds the fixture, starts its production server,
+ * and seeds an isolated database through fixture-only setup helpers.
  * Port 4444 is used to avoid conflicts with development servers.
  */
 export default defineConfig({

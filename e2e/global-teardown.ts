@@ -23,11 +23,11 @@ export default async function globalTeardown(): Promise<void> {
 
 		// Kill the server process
 		try {
-			process.kill(info.pid, "SIGTERM");
+			process.kill(-info.pid, "SIGTERM");
 			await new Promise((r) => setTimeout(r, 1000));
 			try {
-				process.kill(info.pid, 0); // Check if alive
-				process.kill(info.pid, "SIGKILL");
+				process.kill(-info.pid, 0); // Check if alive
+				process.kill(-info.pid, "SIGKILL");
 			} catch {
 				// Already dead
 			}
