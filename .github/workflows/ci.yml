@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
   merge_group:
 
 permissions:
@@ -456,7 +457,7 @@ jobs:
           else
             pnpm exec endform --version
             ENDFORM=false pnpm exec playwright test --list --reporter=list --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} > "$RUNNER_TEMP/emdash-test-list.txt"
-            pnpm exec endform test --organization-id 2G1ZCj7X --test-list "$RUNNER_TEMP/emdash-test-list.txt"
+            pnpm exec tsx e2e/run-endform.ts test --organization-id 2G1ZCj7X --test-list "$RUNNER_TEMP/emdash-test-list.txt"
           fi
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure() && steps.node-e2e.outcome == 'failure'
@@ -475,7 +476,7 @@ jobs:
           else
             pnpm exec endform --version
             ENDFORM=false pnpm exec playwright test --list --reporter=list --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} > "$RUNNER_TEMP/emdash-test-list.txt"
-            pnpm exec endform test --organization-id 2G1ZCj7X --test-list "$RUNNER_TEMP/emdash-test-list.txt"
+            pnpm exec tsx e2e/run-endform.ts test --organization-id 2G1ZCj7X --test-list "$RUNNER_TEMP/emdash-test-list.txt"
           fi
         env:
           EMDASH_E2E_TARGET: cloudflare

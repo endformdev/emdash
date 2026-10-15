@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 import { warmUpAdmin } from "./fixtures/warm-up-admin.js";
+import globalTeardown from "./global-teardown.js";
 
 const execAsync = promisify(execFile);
 
@@ -366,6 +367,7 @@ export default async function globalSetup(): Promise<void> {
 		}
 	}
 	const standaloneNode = BUILT_SERVER && TARGET.usesTempDb;
+	const processGroup = true;
 	const server = spawn(
 		standaloneNode ? process.execPath : astroBin,
 		standaloneNode
@@ -374,9 +376,13 @@ export default async function globalSetup(): Promise<void> {
 		{
 			cwd: workDir,
 			env: serverEnv,
-			detached: true,
+			detached: processGroup,
 			stdio: "pipe",
 		},
+	);
+	writeFileSync(
+		SERVER_INFO_PATH,
+		JSON.stringify({ pid: server.pid, processGroup, workDir, tempDataDir }),
 	);
 
 	let serverOutput = "";
@@ -452,6 +458,7 @@ export default async function globalSetup(): Promise<void> {
 		// 6. Write server info
 		const info = {
 			pid: server.pid!,
+			processGroup,
 			workDir,
 			tempDataDir,
 			baseUrl,
@@ -466,7 +473,7 @@ export default async function globalSetup(): Promise<void> {
 
 		console.log(`[pw] Server ready at ${baseUrl} (pid ${server.pid})`);
 	} catch (error) {
-		process.kill(-server.pid!, "SIGTERM");
+		await globalTeardown();
 		marketplaceServer.close();
 		throw new Error(
 			`${error instanceof Error ? error.message : String(error)}\n\nServer output:\n${serverOutput}`,
