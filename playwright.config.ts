@@ -2,14 +2,10 @@ import { defineConfig, devices } from "@playwright/test";
 
 const isEndform = process.env.ENDFORM === "true";
 
-// Specs that reset or wipe state the whole site shares. On Endform they run in
-// their own suite run, one test at a time, after everything else.
-const EXCLUSIVE_SPECS = [
-	"comments.spec.ts",
-	"passkey-full-setup-virtual-auth.spec.ts",
-	"redirect-loop-detection.spec.ts",
-	"setup-wizard.spec.ts",
-];
+// Specs that reset the whole site. On Endform they run in their own suite run,
+// one test at a time, after everything else. Tests that only wipe one kind of
+// content are tagged instead and limited in endform.config.ts.
+const EXCLUSIVE_SPECS = ["passkey-full-setup-virtual-auth.spec.ts", "setup-wizard.spec.ts"];
 const IGNORED_SPECS = ["portable-text-table.spec.ts"];
 
 /**

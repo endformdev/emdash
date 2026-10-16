@@ -86,7 +86,7 @@ async function cleanup(
 	}
 }
 
-test.describe("redirect loop detection", () => {
+test.describe("redirect loop detection", { tag: "@redirects" }, () => {
 	test.beforeEach(async ({ admin, page, serverInfo }) => {
 		await admin.devBypassAuth();
 		await cleanup(page, serverInfo.baseUrl, serverInfo.token);
