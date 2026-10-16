@@ -6,7 +6,7 @@ on:
     inputs:
       concurrency:
         description: Maximum tests running at once
-        default: "64"
+        default: "128"
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ jobs:
       contents: read
       id-token: write
     env:
-      EMDASH_ENDFORM_CONCURRENCY: ${{ inputs.concurrency || '64' }}
+      EMDASH_ENDFORM_CONCURRENCY: ${{ inputs.concurrency || '128' }}
       ENDFORM_GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
       ENDFORM_GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
