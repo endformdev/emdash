@@ -10,6 +10,7 @@ import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures";
 
 const REDIRECTS_LIST_URL = /\/_emdash\/api\/redirects(\?.*)?$/;
+const NOT_FOUND_SUMMARY_URL = /\/_emdash\/api\/redirects\/404s\/summary(\?.*)?$/;
 
 function uniqueSuffix(): string {
 	return `${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`;
@@ -132,6 +133,10 @@ test.describe("Redirects", () => {
 
 	test.describe("404 Tracking", () => {
 		test("renders the 404 errors tab", async ({ admin, page }) => {
+			// Other tests request missing pages at the same time, so serve no 404s.
+			await page.route(NOT_FOUND_SUMMARY_URL, (route) =>
+				route.fulfill({ json: { data: { items: [] } } }),
+			);
 			await admin.goto("/redirects");
 			await admin.waitForShell();
 			await admin.waitForLoading();
