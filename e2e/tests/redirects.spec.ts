@@ -7,6 +7,8 @@
 
 import { test, expect } from "../fixtures";
 
+const REDIRECTS_LIST_URL = /\/_emdash\/api\/redirects(\?.*)?$/;
+
 test.describe("Redirects", () => {
 	test.beforeEach(async ({ admin }) => {
 		await admin.devBypassAuth();
@@ -14,6 +16,12 @@ test.describe("Redirects", () => {
 
 	test.describe("Empty state", () => {
 		test("displays redirects page with empty state", async ({ admin, page }) => {
+			// Other tests create redirects at the same time, so serve an empty list.
+			await page.route(REDIRECTS_LIST_URL, (route) =>
+				route.request().method() === "GET"
+					? route.fulfill({ json: { data: { items: [] } } })
+					: route.continue(),
+			);
 			await admin.goto("/redirects");
 			await admin.waitForShell();
 			await admin.waitForLoading();
