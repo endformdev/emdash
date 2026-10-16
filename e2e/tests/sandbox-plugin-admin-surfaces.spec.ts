@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { expect, test } from "../fixtures";
 
@@ -135,7 +135,7 @@ test.describe("Sandboxed plugin admin surfaces", () => {
 			name: filename,
 			mimeType: "image/png",
 			buffer: Buffer.concat([
-				readFileSync(join(process.cwd(), "e2e/fixtures/assets/test-image.png")),
+				readFileSync(fileURLToPath(new URL("../fixtures/assets/test-image.png", import.meta.url))),
 				Buffer.from(filename),
 			]),
 		});

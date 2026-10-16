@@ -7,13 +7,14 @@
 
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { Locator, Page } from "@playwright/test";
 
 import { test, expect, type ServerInfo } from "../fixtures";
 
 // Create a test image for uploads
-const TEST_ASSETS_DIR = join(process.cwd(), "e2e/fixtures/assets");
+const TEST_ASSETS_DIR = fileURLToPath(new URL("../fixtures/assets", import.meta.url));
 
 // Regex patterns
 const MEDIA_API_RESPONSE_PATTERN = /\/api\/media/;
