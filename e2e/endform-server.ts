@@ -19,6 +19,10 @@ const SERVER_INFO_PATH = join(tmpdir(), "emdash-pw-server.json");
 const PORT = 4446;
 
 await globalSetup();
+// Endform only echoes a webServer's stderr.
+console.error(
+	`[pw] Fixture ready (${process.env.EMDASH_E2E_BUILD === "production" ? "production build" : "astro dev"})`,
+);
 
 const server = createServer(async (request, response) => {
 	if (request.url === "/ready" && request.method === "GET") {
