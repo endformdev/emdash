@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 
 import type { AstroIntegration, AstroIntegrationLogger, AstroIntegrationMiddleware } from "astro";
 
+import { isInsecureTestBypassEnabled } from "../../api/dev-only.js";
 import { getEnvSiteUrl } from "../../api/public-url.js";
 import { validateAllowedOrigins, validateOriginShape } from "../../auth/allowed-origins.js";
 import { normalizeMigrationConfig } from "../../database/migrations/policy.js";
@@ -625,7 +626,7 @@ export function emdash(config: EmDashConfig = {}): AstroIntegration {
 				astroCommand = command;
 				usesCloudflareAdapter = astroConfig.adapter?.name === "@astrojs/cloudflare";
 				normalizeRegistryConfig(registry, {
-					allowLocalhost: command === "dev" || command === "sync",
+					allowLocalhost: command === "dev" || command === "sync" || isInsecureTestBypassEnabled(),
 				});
 				printBanner(logger);
 				if (command === "dev") {
