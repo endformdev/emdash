@@ -5,6 +5,7 @@ import * as migration072 from "../../../src/database/migrations/072_media_folder
 import { MediaFolderRepository } from "../../../src/database/repositories/media-folders.js";
 import { MediaRepository } from "../../../src/database/repositories/media.js";
 import { EmDashValidationError } from "../../../src/database/repositories/types.js";
+import { testMediaFolderSearch } from "../../utils/media-folder-search.js";
 import {
 	describeEachDialect,
 	setupForDialect,
@@ -26,6 +27,8 @@ describeEachDialect("media folder storage and repositories", (dialect) => {
 	afterEach(async () => {
 		await teardownForDialect(ctx);
 	});
+
+	testMediaFolderSearch(() => folders);
 
 	it("upgrades existing media into the Main library and supports rollback", async () => {
 		await migration072.down(ctx.db);

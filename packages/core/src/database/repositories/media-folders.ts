@@ -1,6 +1,7 @@
 import { sql, type Kysely } from "kysely";
 import { ulid } from "ulidx";
 
+import { isPostgres } from "../dialect-helpers.js";
 import type { Database } from "../types.js";
 import { decodeCursor, EmDashValidationError, encodeCursor, type FindManyResult } from "./types.js";
 
@@ -13,10 +14,6 @@ export interface FindManyMediaFoldersOptions {
 	limit?: number;
 	cursor?: string;
 	q?: string;
-}
-
-function escapeLike(value: string): string {
-	return value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
 }
 
 function normalizeFolderSearch(value: string): string {
@@ -48,8 +45,11 @@ export class MediaFolderRepository {
 
 		const term = normalizeFolderSearch(options.q ?? "");
 		if (term) {
-			const pattern = `%${escapeLike(term)}%`;
-			query = query.where("name_key", "like", sql<string>`${pattern} escape '\\'`);
+			// D1 limits LIKE patterns to 50 bytes, including escapes and wildcards.
+			const position = isPostgres(this.db)
+				? sql<number>`strpos(name_key, ${term})`
+				: sql<number>`instr(name_key, ${term})`;
+			query = query.where(position, ">", 0);
 		}
 
 		if (options.cursor !== undefined) {
