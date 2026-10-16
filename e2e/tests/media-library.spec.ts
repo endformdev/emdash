@@ -82,7 +82,9 @@ async function uploadCropTestImage(page: Page, filename: string) {
 	await dialog.getByLabel(BROWSE_FILES_LABEL).setInputFiles({
 		name: filename,
 		mimeType: "image/png",
-		buffer: CROP_TEST_PNG,
+		// Uploads are deduplicated by content hash, so unique bytes keep each
+		// upload its own media item.
+		buffer: Buffer.concat([CROP_TEST_PNG, Buffer.from(filename)]),
 	});
 	await expect(dialog.getByText("Complete", { exact: true })).toBeVisible();
 	await dialog.getByRole("button", { name: "Done" }).click();
@@ -499,7 +501,8 @@ test.describe("Media Library", () => {
 		await page.setViewportSize({ width: 320, height: 800 });
 		await page.getByRole("button", { name: /browse for Featured Image/i }).click();
 		const picker = page.getByRole("dialog", { name: "Select Featured Image" });
-		await picker.getByRole("button", { name: "test-image.png", exact: true }).click();
+		// Other tests upload their own copies of test-image.png.
+		await picker.getByRole("button", { name: "test-image.png", exact: true }).first().click();
 		await picker.getByRole("button", { name: "Select", exact: true }).click();
 
 		const featuredImageField = page.locator("#field-featured_image");

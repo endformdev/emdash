@@ -5,7 +5,7 @@ import { defineEndformConfig } from "endform";
 const concurrency = Number(process.env.EMDASH_ENDFORM_CONCURRENCY || 8);
 
 export default defineEndformConfig({
-	additionalFiles: ["e2e/fixtures/assets/**"],
+	additionalFiles: ["e2e/fixtures/assets/*"],
 	proxyNetworkHosts: ["<loopback>"],
 	concurrentTestLimits: [
 		{ scope: "within-suite-run", limit: concurrency },

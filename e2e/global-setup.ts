@@ -56,6 +56,8 @@ const FIXTURE_DIR = TARGET.fixtureDir;
 const CLI_BINARY = resolve(ROOT, "packages/core/dist/cli/index.mjs");
 const PORT = 4444;
 const MARKETPLACE_PORT = 4445;
+/** The production server listens here, behind the gzip proxy on PORT. */
+const PRODUCTION_SERVER_PORT = 4447;
 const SERVER_INFO_PATH = join(tmpdir(), "emdash-pw-server.json");
 
 // Regex patterns
@@ -398,11 +400,13 @@ export default async function globalSetup(): Promise<void> {
 			cwd: workDir,
 			env: {
 				...fixtureEnv,
-				HOST: "localhost",
-				PORT: String(PORT),
+				HOST: "127.0.0.1",
+				PORT: String(PRODUCTION_SERVER_PORT),
 			},
 			stdio: "pipe",
 		});
+		const { startCompressionProxy } = await import("./fixtures/compression-proxy.js");
+		await startCompressionProxy(PORT, PRODUCTION_SERVER_PORT);
 	} else {
 		server = spawn(astroBin, ["dev", "--port", String(PORT)], {
 			cwd: workDir,

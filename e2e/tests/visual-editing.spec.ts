@@ -10,12 +10,47 @@
  */
 
 import { test, expect } from "../fixtures";
+import type { ServerInfo } from "../fixtures";
 
 const MEDIA_FILE_PATTERN = /\/_emdash\/api\/media\/file\/.+\.\w+/;
 const IMAGE_BUTTON_PATTERN = /Image/;
 
 // The seeded post with an image block has slug "post-with-image"
 const POST_WITH_IMAGE_PATH = "/posts/post-with-image";
+
+/**
+ * Publish a copy of the seeded image post and return its path. Tests that save
+ * real edits use a copy, so other tests can rely on the seeded post's blocks.
+ */
+async function copyImagePost(serverInfo: ServerInfo): Promise<string> {
+	const headers = {
+		Authorization: `Bearer ${serverInfo.token}`,
+		"Content-Type": "application/json",
+		Origin: serverInfo.baseUrl,
+		"X-EmDash-Request": "1",
+	};
+	const api = `${serverInfo.baseUrl}/_emdash/api/content/posts`;
+	const source = await fetch(`${api}/post-with-image`, { headers });
+	if (!source.ok) throw new Error(`Loading the seeded post failed: ${source.status}`);
+	const { data: sourceData } = (await source.json()) as {
+		data: { item: { data: Record<string, unknown> } };
+	};
+	const slug = `post-with-image-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+	const created = await fetch(api, {
+		method: "POST",
+		headers,
+		body: JSON.stringify({ data: sourceData.item.data, slug }),
+	});
+	if (!created.ok) throw new Error(`Copying the seeded post failed: ${created.status}`);
+	const { data: createdData } = (await created.json()) as { data: { item: { id: string } } };
+	const published = await fetch(`${api}/${createdData.item.id}/publish`, {
+		method: "POST",
+		headers,
+		body: "{}",
+	});
+	if (!published.ok) throw new Error(`Publishing the copied post failed: ${published.status}`);
+	return `/posts/${slug}`;
+}
 
 /**
  * Navigate to a page, retrying if Astro's dev server shows a compilation error.
@@ -679,8 +714,10 @@ test.describe("Inline Editor", () => {
 
 	test("refuses file drop and paste without losing edits or breaking image insertion", async ({
 		page,
+		serverInfo,
 	}) => {
-		await gotoWithRetry(page, POST_WITH_IMAGE_PATH);
+		const postPath = await copyImagePost(serverInfo);
+		await gotoWithRetry(page, postPath);
 
 		const editor = page.locator(".emdash-inline-editor");
 		await expect(editor).toBeVisible({ timeout: 15000 });
@@ -866,8 +903,9 @@ test.describe("Inline Editor", () => {
 		expect(body.data.body.map((block) => block.asset?._ref)).toContain("e2e-1");
 	});
 
-	test("flushes unsaved edits when navigating away (#1582)", async ({ page }) => {
-		await gotoWithRetry(page, POST_WITH_IMAGE_PATH);
+	test("flushes unsaved edits when navigating away (#1582)", async ({ page, serverInfo }) => {
+		const postPath = await copyImagePost(serverInfo);
+		await gotoWithRetry(page, postPath);
 
 		const editor = page.locator(".emdash-inline-editor");
 		await expect(editor).toBeVisible({ timeout: 15000 });
@@ -897,13 +935,13 @@ test.describe("Inline Editor", () => {
 		// reloading immediately: on slow runners the PUT may still be in
 		// flight when the request event fires.
 		await expect
-			.poll(async () => (await page.request.get(POST_WITH_IMAGE_PATH)).text(), {
+			.poll(async () => (await page.request.get(postPath)).text(), {
 				timeout: 10000,
 			})
 			.toContain("Repro1582");
 
 		// The edit must survive a fresh load of the post.
-		await gotoWithRetry(page, POST_WITH_IMAGE_PATH);
+		await gotoWithRetry(page, postPath);
 		const reloadedEditor = page.locator(".emdash-inline-editor");
 		await expect(reloadedEditor).toBeVisible({ timeout: 15000 });
 		await expect(reloadedEditor.locator("text=Repro1582")).toBeVisible();
