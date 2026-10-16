@@ -58,7 +58,7 @@ test.describe("Redirects", () => {
 		});
 	});
 
-	test.describe("CRUD", { tag: "@redirects" }, () => {
+	test.describe("CRUD", () => {
 		test("creates a redirect", async ({ admin, page }) => {
 			const source = `/old-page-${uniqueSuffix()}`;
 			const destination = `/new-page-${uniqueSuffix()}`;
