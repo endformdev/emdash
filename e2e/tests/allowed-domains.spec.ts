@@ -22,25 +22,23 @@ function apiHeaders(token: string, baseUrl: string) {
 test.describe("Allowed Domains Settings", () => {
 	let headers: Record<string, string>;
 	let baseUrl: string;
+	// Domains this test created. Other tests run at the same time, so cleanup
+	// removes only these.
+	let createdDomains: string[];
 
 	test.beforeEach(async ({ admin, serverInfo }) => {
 		await admin.devBypassAuth();
 		baseUrl = serverInfo.baseUrl;
 		headers = apiHeaders(serverInfo.token, baseUrl);
+		createdDomains = [];
+	});
 
-		// Clean up any leftover test domains from previous runs
-		const res = await fetch(`${baseUrl}/_emdash/api/admin/allowed-domains`, { headers });
-		if (res.ok) {
-			const data: any = await res.json();
-			const domains = data.data?.domains ?? [];
-			for (const d of domains) {
-				if (d.domain.includes("e2e-test")) {
-					await fetch(
-						`${baseUrl}/_emdash/api/admin/allowed-domains/${encodeURIComponent(d.domain)}`,
-						{ method: "DELETE", headers },
-					).catch(() => {});
-				}
-			}
+	test.afterEach(async () => {
+		for (const domain of createdDomains) {
+			await fetch(`${baseUrl}/_emdash/api/admin/allowed-domains/${encodeURIComponent(domain)}`, {
+				method: "DELETE",
+				headers,
+			}).catch(() => {});
 		}
 	});
 
@@ -84,6 +82,7 @@ test.describe("Allowed Domains Settings", () => {
 		await admin.waitForLoading();
 
 		const testDomain = `e2e-test-${Date.now()}.example.com`;
+		createdDomains.push(testDomain);
 
 		// Click "Add Domain" to open the inline form
 		await page.getByRole("button", { name: "Add Domain" }).click();
@@ -118,6 +117,7 @@ test.describe("Allowed Domains Settings", () => {
 
 	test("removes a domain via the UI", async ({ admin, page }) => {
 		const testDomain = `e2e-test-delete-${Date.now()}.example.com`;
+		createdDomains.push(testDomain);
 
 		// Create domain via API first
 		await fetch(`${baseUrl}/_emdash/api/admin/allowed-domains`, {
@@ -161,6 +161,7 @@ test.describe("Allowed Domains Settings", () => {
 
 	test("cancel delete keeps the domain", async ({ admin, page }) => {
 		const testDomain = `e2e-test-keep-${Date.now()}.example.com`;
+		createdDomains.push(testDomain);
 
 		// Create domain via API
 		await fetch(`${baseUrl}/_emdash/api/admin/allowed-domains`, {
@@ -204,6 +205,7 @@ test.describe("Allowed Domains Settings", () => {
 
 	test("toggling enabled/disabled updates the domain", async ({ admin, page }) => {
 		const testDomain = `e2e-test-toggle-${Date.now()}.example.com`;
+		createdDomains.push(testDomain);
 
 		// Create domain via API
 		await fetch(`${baseUrl}/_emdash/api/admin/allowed-domains`, {

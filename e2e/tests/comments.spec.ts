@@ -80,7 +80,7 @@ async function cleanupComments(
 // Tests
 // ---------------------------------------------------------------------------
 
-test.describe("Comments Moderation", () => {
+test.describe("Comments Moderation", { tag: "@comments" }, () => {
 	test.beforeEach(async ({ admin }) => {
 		await admin.devBypassAuth();
 	});
