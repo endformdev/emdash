@@ -1,4 +1,5 @@
 import { expect, test } from "../fixtures";
+import { createPost } from "../fixtures/content";
 
 test.describe("Registry fixture Block Kit", () => {
 	test.beforeEach(async ({ admin, page }) => {
@@ -87,7 +88,7 @@ test.describe("Registry fixture Block Kit", () => {
 		page,
 		serverInfo,
 	}) => {
-		const entryId = serverInfo.contentIds.posts[0]!;
+		const entryId = await createPost(serverInfo, `Plugin editor post ${Date.now()}`);
 		let panelRequests = 0;
 		page.on("request", (request) => {
 			if (request.url().includes("/plugin-extensions/marketplace-test/panel/entry-context")) {

@@ -10,8 +10,9 @@ export default defineEndformConfig({
 	concurrentTestLimits: [
 		{ scope: "within-suite-run", limit: concurrency },
 		{ scope: "within-suite-run", label: "project:exclusive", limit: 1 },
-		// Tests that delete every comment run one at a time, alongside the rest
-		// of the suite.
+		// Tests that delete every comment, or switch search on and off for a
+		// whole collection, run one at a time per tag alongside the rest.
 		{ scope: "within-suite-run", label: "tag:@comments", limit: 1 },
+		{ scope: "within-suite-run", label: "tag:@search", limit: 1 },
 	],
 });

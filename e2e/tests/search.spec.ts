@@ -185,7 +185,7 @@ test.describe("Search", () => {
 		});
 	});
 
-	test.describe("Search API", () => {
+	test.describe("Search API", { tag: "@search" }, () => {
 		test("search endpoint is publicly accessible", async ({ serverInfo }) => {
 			// The LiveSearch component is shipped for public-site use and calls this
 			// endpoint without credentials. The query layer hardcodes status='published',
@@ -282,7 +282,7 @@ test.describe("Search", () => {
 		});
 	});
 
-	test.describe("Search Suggestions API", () => {
+	test.describe("Search Suggestions API", { tag: "@search" }, () => {
 		test.fixme("returns suggestions for partial queries", async ({ serverInfo }) => {
 			// TODO: getSuggestions fails in dev mode -- needs investigation
 			await enableSearch(serverInfo, "posts");
@@ -301,7 +301,7 @@ test.describe("Search", () => {
 		});
 	});
 
-	test.describe("Search Stats API", () => {
+	test.describe("Search Stats API", { tag: "@search" }, () => {
 		test("returns search index statistics", async ({ serverInfo }) => {
 			await enableSearch(serverInfo, "posts");
 
@@ -313,7 +313,7 @@ test.describe("Search", () => {
 		});
 	});
 
-	test.describe("Search Enable/Disable API", () => {
+	test.describe("Search Enable/Disable API", { tag: "@search" }, () => {
 		test("enables search for a collection", async ({ serverInfo }) => {
 			const res = await apiRequest(serverInfo, "POST", "/_emdash/api/search/enable", {
 				collection: "pages",
@@ -346,7 +346,7 @@ test.describe("Search", () => {
 		});
 	});
 
-	test.describe("Search Rebuild API", () => {
+	test.describe("Search Rebuild API", { tag: "@search" }, () => {
 		test("rebuilds the index for a collection", async ({ serverInfo }) => {
 			await enableSearch(serverInfo, "posts");
 

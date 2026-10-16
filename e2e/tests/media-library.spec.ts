@@ -957,10 +957,11 @@ test.describe("Media Library", () => {
 		await createFolder(page, `Press ${Date.now()}`);
 
 		const mediaGrid = page.locator("[data-media-grid]");
-		const originalImage = mediaGrid.locator("img").first();
+		const uploaded = mediaGrid.getByRole("button", { name: uniqueFilename, exact: true });
+		const originalImage = uploaded.locator("img");
 		await expect(originalImage).toBeVisible();
 		const originalSrc = await originalImage.getAttribute("src");
-		await mediaGrid.locator("button").first().click();
+		await uploaded.click();
 
 		const details = page.getByRole("dialog", { name: "Media details" });
 		await details.getByRole("combobox", { name: "Location" }).click();
@@ -973,7 +974,7 @@ test.describe("Media Library", () => {
 
 		await page.getByRole("link", { name: `Open folder ${folderName}` }).click();
 		await expect(page).toHaveURL(/\/media\?folder=/);
-		await expect(mediaGrid.locator("img").first()).toHaveAttribute("src", originalSrc!);
+		await expect(originalImage).toHaveAttribute("src", originalSrc!);
 		const mediaLibrary = page.locator("[data-media-library]");
 		const pageSize = page.getByRole("combobox", { name: "Page size" });
 		await expect(mediaLibrary).not.toHaveAttribute("aria-busy", "true");
@@ -1028,7 +1029,7 @@ test.describe("Media Library", () => {
 			await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
 		).toBe(true);
 		await page.reload();
-		await expect(mediaGrid.locator("img").first()).toHaveAttribute("src", originalSrc!);
+		await expect(originalImage).toHaveAttribute("src", originalSrc!);
 		await page.route("**/_emdash/api/media/folders?**", async (route) => {
 			await new Promise((resolve) => setTimeout(resolve, 1200));
 			await route.continue();
@@ -1094,6 +1095,6 @@ test.describe("Media Library", () => {
 
 		await expect(page).toHaveURL(/\/media\/?$/);
 		await page.getByRole("button", { name: "Clear search" }).click();
-		await expect(mediaGrid.locator("img").first()).toHaveAttribute("src", originalSrc!);
+		await expect(originalImage).toHaveAttribute("src", originalSrc!);
 	});
 });

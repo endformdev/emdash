@@ -9,6 +9,8 @@
 
 import { test, expect } from "../fixtures";
 
+const WIDGET_AREAS_LIST_URL = /\/_emdash\/api\/widget-areas(\?.*)?$/;
+
 // API helper
 function apiHeaders(token: string, baseUrl: string) {
 	return {
@@ -48,19 +50,12 @@ test.describe("Widgets", () => {
 		});
 
 		test("shows empty state when no widget areas exist", async ({ admin, page }) => {
-			// Clean up any existing areas first
-			const res = await fetch(`${baseUrl}/_emdash/api/widget-areas`, { headers });
-			if (res.ok) {
-				const data: any = await res.json();
-				const areas = data.data?.areas ?? [];
-				for (const area of areas) {
-					await fetch(`${baseUrl}/_emdash/api/widget-areas/${area.name}`, {
-						method: "DELETE",
-						headers,
-					}).catch(() => {});
-				}
-			}
-
+			// Other tests create widget areas at the same time, so serve an empty list.
+			await page.route(WIDGET_AREAS_LIST_URL, (route) =>
+				route.request().method() === "GET"
+					? route.fulfill({ json: { data: { items: [] } } })
+					: route.continue(),
+			);
 			await admin.goto("/widgets");
 			await admin.waitForShell();
 			await admin.waitForLoading();
