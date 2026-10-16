@@ -5,9 +5,30 @@
  * plus the 404 tracking tab.
  */
 
+import type { Page } from "@playwright/test";
+
 import { test, expect } from "../fixtures";
 
 const REDIRECTS_LIST_URL = /\/_emdash\/api\/redirects(\?.*)?$/;
+
+function uniqueSuffix(): string {
+	return `${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`;
+}
+
+/** The create/edit form. Toasts also have the dialog role, so pick it by its field. */
+function redirectForm(page: Page) {
+	return page.getByRole("dialog").filter({ has: page.locator('input[placeholder*="old-page"]') });
+}
+
+async function createRedirect(page: Page, source: string, destination: string) {
+	await page.getByRole("button", { name: "New Redirect" }).click();
+	const dialog = redirectForm(page);
+	await expect(dialog).toBeVisible();
+	await dialog.locator('input[placeholder*="old-page"]').fill(source);
+	await dialog.locator('input[placeholder*="new-page"]').fill(destination);
+	await dialog.getByRole("button", { name: "Create" }).click();
+	await expect(dialog).toBeHidden({ timeout: 10000 });
+}
 
 test.describe("Redirects", () => {
 	test.beforeEach(async ({ admin }) => {
@@ -39,100 +60,73 @@ test.describe("Redirects", () => {
 
 	test.describe("CRUD", () => {
 		test("creates a redirect", async ({ admin, page }) => {
+			const source = `/old-page-${uniqueSuffix()}`;
+			const destination = `/new-page-${uniqueSuffix()}`;
 			await admin.goto("/redirects");
 			await admin.waitForShell();
 			await admin.waitForLoading();
 
-			// Open create dialog
-			await page.getByRole("button", { name: "New Redirect" }).click();
-			await expect(page.locator('[role="dialog"]')).toBeVisible();
-
-			// Fill form
-			const dialog = page.locator('[role="dialog"]');
-			await dialog.locator('input[placeholder*="old-page"]').fill("/old-page");
-			await dialog.locator('input[placeholder*="new-page"]').fill("/new-page");
-
 			// Status code defaults to 301 -- leave it
-
-			// Submit
-			await dialog.getByRole("button", { name: "Create" }).click();
-
-			// Dialog should close
-			await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 10000 });
+			await createRedirect(page, source, destination);
 
 			// Redirect should appear in the list
-			await expect(page.locator("text=/old-page").first()).toBeVisible();
-			await expect(page.locator("text=/new-page").first()).toBeVisible();
+			await expect(page.getByText(source, { exact: true })).toBeVisible();
+			await expect(page.getByText(destination, { exact: true })).toBeVisible();
 		});
 
 		test("edits a redirect", async ({ admin, page }) => {
+			const source = `/edit-source-${uniqueSuffix()}`;
+			const original = `/edit-dest-original-${uniqueSuffix()}`;
+			const updated = `/edit-dest-updated-${uniqueSuffix()}`;
 			await admin.goto("/redirects");
 			await admin.waitForShell();
 			await admin.waitForLoading();
 
-			// Create a redirect first
-			await page.getByRole("button", { name: "New Redirect" }).click();
-			const createDialog = page.locator('[role="dialog"]');
-			await createDialog.locator('input[placeholder*="old-page"]').fill("/edit-source");
-			await createDialog.locator('input[placeholder*="new-page"]').fill("/edit-dest-original");
-			await createDialog.getByRole("button", { name: "Create" }).click();
-			await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 10000 });
+			await createRedirect(page, source, original);
+			await expect(page.getByText(source, { exact: true })).toBeVisible();
 
-			// Wait for the redirect to appear
-			await expect(page.locator("text=/edit-source").first()).toBeVisible();
-
-			// Click the edit button on that row (use .first() to avoid ancestor div ambiguity).
 			// Kumo 2.x renders <Button title> as a Tooltip popup rather than a DOM
 			// title attribute; aria-label is on the button itself.
-			await page.locator('button[aria-label^="Edit redirect"]').first().click();
-
-			// Edit dialog should open
-			await expect(page.locator('[role="dialog"]')).toBeVisible();
+			await page.getByRole("button", { name: `Edit redirect ${source}`, exact: true }).click();
 
 			// Change the destination
-			const editDialog = page.locator('[role="dialog"]');
+			const editDialog = redirectForm(page);
+			await expect(editDialog).toBeVisible();
 			const destInput = editDialog.locator('input[placeholder*="new-page"]');
 			await destInput.clear();
-			await destInput.fill("/edit-dest-updated");
+			await destInput.fill(updated);
 
 			// Save
 			await editDialog.getByRole("button", { name: "Save" }).click();
-			await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 10000 });
+			await expect(editDialog).toBeHidden({ timeout: 10000 });
 
 			// Verify the updated destination is shown
-			await expect(page.locator("text=/edit-dest-updated").first()).toBeVisible();
-			await expect(page.locator("text=/edit-dest-original")).not.toBeVisible();
+			await expect(page.getByText(updated, { exact: true })).toBeVisible();
+			await expect(page.getByText(original, { exact: true })).toBeHidden();
 		});
 
 		test("deletes a redirect", async ({ admin, page }) => {
+			const source = `/to-delete-${uniqueSuffix()}`;
 			await admin.goto("/redirects");
 			await admin.waitForShell();
 			await admin.waitForLoading();
 
-			// Create a redirect to delete
-			await page.getByRole("button", { name: "New Redirect" }).click();
-			const dialog = page.locator('[role="dialog"]');
-			await dialog.locator('input[placeholder*="old-page"]').fill("/to-delete");
-			await dialog.locator('input[placeholder*="new-page"]').fill("/deleted-dest");
-			await dialog.getByRole("button", { name: "Create" }).click();
-			await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 10000 });
+			await createRedirect(page, source, `/deleted-dest-${uniqueSuffix()}`);
+			await expect(page.getByText(source, { exact: true })).toBeVisible();
 
-			// Wait for it to appear
-			await expect(page.locator("text=/to-delete").first()).toBeVisible();
-
-			// Click the delete button on that row (use .first() to avoid ancestor div ambiguity).
 			// See note above re: Kumo 2.x Button title -> Tooltip.
-			await page.locator('button[aria-label^="Delete redirect"]').first().click();
+			await page.getByRole("button", { name: `Delete redirect ${source}`, exact: true }).click();
 
 			// Confirm deletion in the ConfirmDialog
-			await expect(page.locator('[role="dialog"]')).toBeVisible();
-			await page.getByRole("button", { name: "Delete" }).click();
-
-			// Dialog should close
-			await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 10000 });
+			const confirm = page
+				.getByRole("dialog")
+				.filter({ has: page.getByRole("button", { name: "Delete", exact: true }) });
+			await expect(confirm).toBeVisible();
+			await confirm.getByRole("button", { name: "Delete", exact: true }).click();
+			await expect(confirm).toBeHidden({ timeout: 10000 });
 
 			// Redirect should be gone
-			await expect(page.locator("text=/to-delete")).not.toBeVisible();
+			await expect(page.getByText(source, { exact: true })).toBeHidden();
 		});
 	});
 

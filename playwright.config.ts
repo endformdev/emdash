@@ -5,6 +5,7 @@ const isEndform = process.env.ENDFORM === "true";
 // Specs that reset or wipe state the whole site shares. On Endform they run in
 // their own suite run, one test at a time, after everything else.
 const EXCLUSIVE_SPECS = [
+	"comments.spec.ts",
 	"passkey-full-setup-virtual-auth.spec.ts",
 	"redirect-loop-detection.spec.ts",
 	"setup-wizard.spec.ts",
