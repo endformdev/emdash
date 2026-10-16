@@ -185,7 +185,7 @@ test.describe("Search", () => {
 		});
 	});
 
-	test.describe("Search API", { tag: "@search" }, () => {
+	test.describe("Search API", () => {
 		test("search endpoint is publicly accessible", async ({ serverInfo }) => {
 			// The LiveSearch component is shipped for public-site use and calls this
 			// endpoint without credentials. The query layer hardcodes status='published',
@@ -282,7 +282,7 @@ test.describe("Search", () => {
 		});
 	});
 
-	test.describe("Search Suggestions API", { tag: "@search" }, () => {
+	test.describe("Search Suggestions API", () => {
 		test.fixme("returns suggestions for partial queries", async ({ serverInfo }) => {
 			// TODO: getSuggestions fails in dev mode -- needs investigation
 			await enableSearch(serverInfo, "posts");
@@ -301,7 +301,7 @@ test.describe("Search", () => {
 		});
 	});
 
-	test.describe("Search Stats API", { tag: "@search" }, () => {
+	test.describe("Search Stats API", () => {
 		test("returns search index statistics", async ({ serverInfo }) => {
 			await enableSearch(serverInfo, "posts");
 
@@ -313,8 +313,9 @@ test.describe("Search", () => {
 		});
 	});
 
-	test.describe("Search Enable/Disable API", { tag: "@search" }, () => {
-		test("enables search for a collection", async ({ serverInfo }) => {
+	test.describe("Search Enable/Disable API", () => {
+		// Switches search for the whole pages collection.
+		test("enables search for a collection", { tag: "@search" }, async ({ serverInfo }) => {
 			const res = await apiRequest(serverInfo, "POST", "/_emdash/api/search/enable", {
 				collection: "pages",
 				enabled: true,
@@ -324,7 +325,8 @@ test.describe("Search", () => {
 			expect(res.status).toBeLessThan(500);
 		});
 
-		test("disables search for a collection", async ({ serverInfo }) => {
+		// Switches search for the whole pages collection.
+		test("disables search for a collection", { tag: "@search" }, async ({ serverInfo }) => {
 			// First ensure it's enabled
 			await enableSearch(serverInfo, "pages");
 
@@ -346,7 +348,7 @@ test.describe("Search", () => {
 		});
 	});
 
-	test.describe("Search Rebuild API", { tag: "@search" }, () => {
+	test.describe("Search Rebuild API", () => {
 		test("rebuilds the index for a collection", async ({ serverInfo }) => {
 			await enableSearch(serverInfo, "posts");
 
@@ -359,21 +361,26 @@ test.describe("Search", () => {
 			expect(typeof body.data.indexed).toBe("number");
 		});
 
-		test("rebuild fails for collection without search enabled", async ({ serverInfo }) => {
-			// Disable search for pages first to ensure it's off
-			await apiRequest(serverInfo, "POST", "/_emdash/api/search/enable", {
-				collection: "pages",
-				enabled: false,
-			});
+		// Switches search for the whole pages collection.
+		test(
+			"rebuild fails for collection without search enabled",
+			{ tag: "@search" },
+			async ({ serverInfo }) => {
+				// Disable search for pages first to ensure it's off
+				await apiRequest(serverInfo, "POST", "/_emdash/api/search/enable", {
+					collection: "pages",
+					enabled: false,
+				});
 
-			const res = await apiRequest(serverInfo, "POST", "/_emdash/api/search/rebuild", {
-				collection: "pages",
-			});
-			expect(res.status).toBe(400);
+				const res = await apiRequest(serverInfo, "POST", "/_emdash/api/search/rebuild", {
+					collection: "pages",
+				});
+				expect(res.status).toBe(400);
 
-			const body = await res.json();
-			expect(body.error).toBeDefined();
-		});
+				const body = await res.json();
+				expect(body.error).toBeDefined();
+			},
+		);
 	});
 
 	test.describe("Command Palette Content Search", () => {

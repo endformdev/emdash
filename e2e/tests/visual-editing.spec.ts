@@ -18,13 +18,20 @@ const IMAGE_BUTTON_PATTERN = /Image/;
 // The seeded post with an image block has slug "post-with-image"
 const POST_WITH_IMAGE_PATH = "/posts/post-with-image";
 
-/** Keys of the blocks global setup seeds into the image post. */
-const SEEDED_IMAGE_POST_BLOCKS = new Set(["b1", "img1", "b2"]);
+function textBlock(key: string, text: string) {
+	return {
+		_type: "block",
+		_key: key,
+		style: "normal",
+		children: [{ _type: "span", _key: `${key}-text`, text }],
+		markDefs: [],
+	};
+}
 
 /**
  * Publish a copy of the seeded image post and return its path. Tests that save
- * edits or check the saved blocks use a copy. The seeded post can pick up
- * blocks from other tests' edits, so the copy keeps only the seeded blocks.
+ * edits or check the saved blocks use a copy. Other tests' edits can change the
+ * seeded post, so the copy rebuilds the seeded blocks around its image.
  */
 async function copyImagePost(serverInfo: ServerInfo): Promise<string> {
 	const headers = {
@@ -37,11 +44,17 @@ async function copyImagePost(serverInfo: ServerInfo): Promise<string> {
 	const source = await fetch(`${api}/post-with-image`, { headers });
 	if (!source.ok) throw new Error(`Loading the seeded post failed: ${source.status}`);
 	const { data: sourceData } = (await source.json()) as {
-		data: { item: { data: { body: Array<{ _key: string }> } & Record<string, unknown> } };
+		data: { item: { data: { body: Array<{ _type: string }> } & Record<string, unknown> } };
 	};
+	const image = sourceData.item.data.body.find((block) => block._type === "image");
+	if (!image) throw new Error("The seeded post has no image block");
 	const data = {
 		...sourceData.item.data,
-		body: sourceData.item.data.body.filter((block) => SEEDED_IMAGE_POST_BLOCKS.has(block._key)),
+		body: [
+			textBlock("before", "Text before image."),
+			image,
+			textBlock("after", "Text after image."),
+		],
 	};
 	const slug = `post-with-image-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 	const created = await fetch(api, {

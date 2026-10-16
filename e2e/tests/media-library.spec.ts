@@ -908,6 +908,7 @@ test.describe("Media Library", () => {
 		await expect(page.locator("[data-media-library]")).not.toHaveAttribute("aria-busy", "true");
 		const rtlSearch = page.locator('input[type="search"]');
 		await rtlSearch.fill(longFolderName);
+		await expect(page.locator("[data-media-library]")).not.toHaveAttribute("aria-busy", "true");
 		const longFolderText = page
 			.locator('[data-media-folder-card] [dir="auto"]')
 			.filter({ hasText: longFolderName });
@@ -924,6 +925,7 @@ test.describe("Media Library", () => {
 
 		await longFolderText.locator("xpath=ancestor::a[1]").click();
 		await expect(page).toHaveURL(/\/media\?folder=/);
+		await expect(page.locator("[data-media-library]")).not.toHaveAttribute("aria-busy", "true");
 		const currentBidiName = page.locator('[aria-current="page"] [dir="auto"]').first();
 		await expect(currentBidiName).toBeVisible();
 		const currentBidiMetrics = await currentBidiName.evaluate((element) => ({
