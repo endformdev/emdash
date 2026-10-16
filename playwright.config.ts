@@ -13,7 +13,6 @@ const isEndform = process.env.ENDFORM === "true";
 export default defineConfig({
 	testDir: "./e2e/tests",
 	testIgnore: "portable-text-table.spec.ts",
-	// Endform limits concurrency around the shared fixture in endform.config.ts.
 	fullyParallel: isEndform,
 	workers: 1,
 	forbidOnly: !!process.env.CI,
