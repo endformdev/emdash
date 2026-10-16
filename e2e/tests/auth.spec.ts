@@ -1,5 +1,5 @@
 /**
- * Authentication E2E Tests
+ * Authentication E2E Tests (CI baseline)
  *
  * Tests for authentication features:
  * - Login page UI
