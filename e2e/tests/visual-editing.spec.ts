@@ -363,6 +363,7 @@ test.describe("Inline Editor", () => {
 	});
 
 	test("shows slash menu on / keystroke", async ({ page }) => {
+		await stubSaves(page);
 		await gotoWithRetry(page, POST_WITH_IMAGE_PATH);
 
 		const editor = page.locator(".emdash-inline-editor");
@@ -856,9 +857,9 @@ test.describe("Inline Editor", () => {
 		expect(await guidance.evaluate((element) => getComputedStyle(element).direction)).toBe("rtl");
 	});
 
-	test("inserts the chosen image, selects it, and saves it", async ({ page }) => {
+	test("inserts the chosen image, selects it, and saves it", async ({ page, serverInfo }) => {
 		await stubSaves(page);
-		await gotoWithRetry(page, POST_WITH_IMAGE_PATH);
+		await gotoWithRetry(page, await copyImagePost(serverInfo));
 		const editor = page.locator(".emdash-inline-editor");
 		await expect(editor).toBeVisible({ timeout: 15000 });
 		const picker = await openImagePicker(page);
