@@ -441,19 +441,15 @@ export class AdminPage {
 		// Click add link button
 		await this.page.getByRole("button", { name: "Add Custom Link" }).first().click();
 
-		// Wait for dialog to appear
-		await this.page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 5000 });
-
-		// Fill form (scope to dialog to avoid ambiguity)
-		const dialog = this.page.locator('[role="dialog"]');
+		// Toasts also have the dialog role, so pick the form's dialog by its field.
+		const dialog = this.page.getByRole("dialog").filter({ has: this.page.getByLabel("URL") });
+		await expect(dialog).toBeVisible({ timeout: 5000 });
 		await dialog.getByLabel("Label").fill(label);
 		await dialog.getByLabel("URL").fill(url);
 
 		// Submit
 		await dialog.getByRole("button", { name: "Add" }).click();
-
-		// Wait for dialog to close
-		await this.page.waitForSelector('[role="dialog"]', { state: "hidden" });
+		await expect(dialog).toBeHidden();
 	}
 
 	/**

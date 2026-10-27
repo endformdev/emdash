@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { test, expect } from "../fixtures";
 
@@ -7,7 +7,9 @@ import { test, expect } from "../fixtures";
 const CONTENT_EDIT_URL_PATTERN = /\/content\/posts\/[A-Z0-9]+(?:\?.*)?$/;
 
 // Shared 1x1 PNG fixture used by the media upload flows.
-const TEST_IMAGE_PATH = join(process.cwd(), "e2e/fixtures/assets/test-image.png");
+const TEST_IMAGE_PATH = fileURLToPath(
+	new URL("../fixtures/assets/test-image.png", import.meta.url),
+);
 
 function apiHeaders(token: string, baseUrl: string) {
 	return {

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { expect, test } from "../fixtures";
 
@@ -135,7 +135,7 @@ test.describe("Sandboxed plugin admin surfaces", () => {
 			name: filename,
 			mimeType: "image/png",
 			buffer: Buffer.concat([
-				readFileSync(join(process.cwd(), "e2e/fixtures/assets/test-image.png")),
+				readFileSync(fileURLToPath(new URL("../fixtures/assets/test-image.png", import.meta.url))),
 				Buffer.from(filename),
 			]),
 		});
@@ -165,68 +165,69 @@ test.describe("Sandboxed plugin admin surfaces", () => {
 		);
 	});
 
-	test("records comment moderation and email hooks from real admin workflows", async ({
-		admin,
-		page,
-		request,
-		serverInfo,
-	}) => {
-		const authorName = `Sandbox commenter ${crypto.randomUUID()}`;
-		const comment = await request.post(
-			`${serverInfo.baseUrl}/_emdash/api/comments/posts/${serverInfo.contentIds.posts[0]}`,
-			{
-				headers: { "Content-Type": "application/json", "X-EmDash-Request": "1" },
-				data: {
-					body: "Created to cross the sandbox hook pipeline",
-					authorName,
-					authorEmail: "sandbox-comment@example.test",
+	test(
+		"records comment moderation and email hooks from real admin workflows",
+		{ tag: "@comments" },
+		async ({ admin, page, request, serverInfo }) => {
+			const authorName = `Sandbox commenter ${crypto.randomUUID()}`;
+			const comment = await request.post(
+				`${serverInfo.baseUrl}/_emdash/api/comments/posts/${serverInfo.contentIds.posts[0]}`,
+				{
+					headers: { "Content-Type": "application/json", "X-EmDash-Request": "1" },
+					data: {
+						body: "Created to cross the sandbox hook pipeline",
+						authorName,
+						authorEmail: "sandbox-comment@example.test",
+					},
 				},
-			},
-		);
-		expect(comment.status(), await comment.text()).toBe(201);
+			);
+			expect(comment.status(), await comment.text()).toBe(201);
 
-		await admin.goto("/comments");
-		await admin.waitForLoading();
-		const row = page.locator("tr", { hasText: authorName });
-		await expect(row).toBeVisible();
-		await row.getByRole("button", { name: "Approve" }).click();
-		await expect(row).toBeHidden();
+			await admin.goto("/comments");
+			await admin.waitForLoading();
+			const row = page.locator("tr", { hasText: authorName });
+			await expect(row).toBeVisible();
+			await row.getByRole("button", { name: "Approve" }).click();
+			await expect(row).toBeHidden();
 
-		const selectEmailProvider = await page.request.put(
-			"/_emdash/api/admin/hooks/exclusive/email:deliver",
-			{
-				headers: { "X-EmDash-Request": "1" },
-				data: { pluginId: "marketplace-test" },
-			},
-		);
-		expect(selectEmailProvider.status(), await selectEmailProvider.text()).toBe(200);
-		await admin.goto("/settings/email");
-		await admin.waitForLoading();
-		await expect(page.getByText("Email provider active", { exact: true })).toBeVisible();
-		await expect(page.getByText("marketplace-test", { exact: true }).first()).toBeVisible();
-		await page.getByRole("textbox", { name: "Recipient email" }).fill("recipient@example.test");
-		await page.getByRole("button", { name: "Send Test" }).click();
-		await expect(
-			page.getByText("Test email sent to recipient@example.test", { exact: true }),
-		).toBeVisible();
+			const selectEmailProvider = await page.request.put(
+				"/_emdash/api/admin/hooks/exclusive/email:deliver",
+				{
+					headers: { "X-EmDash-Request": "1" },
+					data: { pluginId: "marketplace-test" },
+				},
+			);
+			expect(selectEmailProvider.status(), await selectEmailProvider.text()).toBe(200);
+			await admin.goto("/settings/email");
+			await admin.waitForLoading();
+			await expect(page.getByText("Email provider active", { exact: true })).toBeVisible();
+			await expect(page.getByText("marketplace-test", { exact: true }).first()).toBeVisible();
+			await page.getByRole("textbox", { name: "Recipient email" }).fill("recipient@example.test");
+			await page.getByRole("button", { name: "Send Test" }).click();
+			await expect(
+				page.getByText("Test email sent to recipient@example.test", { exact: true }),
+			).toBeVisible();
 
-		const response = await page.request.post("/_emdash/api/plugins/marketplace-test/events-list", {
-			headers: { "X-EmDash-Request": "1" },
-			data: {},
-		});
-		const body = (await response.json()) as {
-			data: { events: { items: Array<{ data: Record<string, unknown> }> } };
-		};
-		const eventTypes = body.data.events.items.map((item) => item.data.type);
-		expect(eventTypes).toEqual(
-			expect.arrayContaining([
+			const hookTypes = [
 				"comment-before-create",
 				"comment-created",
 				"comment-moderated",
 				"email-before-send",
 				"email-deliver",
 				"email-after-send",
-			]),
-		);
-	});
+			];
+			const response = await page.request.post(
+				"/_emdash/api/plugins/marketplace-test/events-list",
+				{
+					headers: { "X-EmDash-Request": "1" },
+					data: { types: hookTypes },
+				},
+			);
+			const body = (await response.json()) as {
+				data: { events: { items: Array<{ data: Record<string, unknown> }> } };
+			};
+			const eventTypes = body.data.events.items.map((item) => item.data.type);
+			expect(eventTypes).toEqual(expect.arrayContaining(hookTypes));
+		},
+	);
 });
