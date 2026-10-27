@@ -1,4 +1,5 @@
 import { expect, test } from "../fixtures";
+import { createPost } from "../fixtures/content";
 
 test.describe("Sandboxed plugin editor extensions", () => {
 	test.skip(
@@ -14,7 +15,7 @@ test.describe("Sandboxed plugin editor extensions", () => {
 		admin,
 		serverInfo,
 	}) => {
-		const entryId = serverInfo.contentIds.posts[0]!;
+		const entryId = await createPost(serverInfo, `Plugin editor post ${Date.now()}`);
 		await admin.page
 			.context()
 			.addCookies([{ name: "emdash-locale", value: "ar", domain: "localhost", path: "/" }]);
@@ -70,7 +71,7 @@ test.describe("Sandboxed plugin editor extensions", () => {
 		admin,
 		serverInfo,
 	}, testInfo) => {
-		const entryId = serverInfo.contentIds.posts[0]!;
+		const entryId = await createPost(serverInfo, `Plugin editor post ${Date.now()}`);
 		await admin.page
 			.context()
 			.addCookies([{ name: "emdash-locale", value: "ar", domain: "localhost", path: "/" }]);
@@ -128,7 +129,7 @@ test.describe("Sandboxed plugin editor extensions", () => {
 		admin,
 		serverInfo,
 	}, testInfo) => {
-		const entryId = serverInfo.contentIds.posts[0]!;
+		const entryId = await createPost(serverInfo, `Plugin editor post ${Date.now()}`);
 		await admin.page
 			.context()
 			.addCookies([{ name: "emdash-locale", value: "ar", domain: "localhost", path: "/" }]);
@@ -169,7 +170,7 @@ test.describe("Sandboxed plugin editor extensions", () => {
 			admin,
 			serverInfo,
 		}) => {
-			const entryId = serverInfo.contentIds.posts[0]!;
+			const entryId = await createPost(serverInfo, `Plugin editor post ${Date.now()}`);
 			if (adminLocale === "ar") {
 				await admin.page
 					.context()

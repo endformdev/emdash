@@ -1,5 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const isEndform = process.env.ENDFORM === "true";
+
+// Specs that reset the whole site. On Endform they run in their own suite run,
+// one test at a time, after everything else. Tests that only wipe one kind of
+// content are tagged instead and limited in endform.config.ts.
+const EXCLUSIVE_SPECS = ["passkey-full-setup-virtual-auth.spec.ts", "setup-wizard.spec.ts"];
+const IGNORED_SPECS = ["portable-text-table.spec.ts"];
+
 /**
  * Playwright E2E test configuration for EmDash CMS
  *
@@ -10,9 +18,10 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
 	testDir: "./e2e/tests",
-	testIgnore: "portable-text-table.spec.ts",
-	// Disable parallel to avoid shared database state issues
-	fullyParallel: false,
+	testIgnore: IGNORED_SPECS,
+	// Local runs share one database and run in order. On Endform every test
+	// runs on its own machine against the production build.
+	fullyParallel: isEndform,
 	workers: 1,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 1 : 0,
@@ -23,21 +32,44 @@ export default defineConfig({
 	// first hit; give it headroom so cold compilation doesn't time out specs.
 	timeout: process.env.EMDASH_E2E_TARGET === "cloudflare" ? 90_000 : 30000,
 
-	globalSetup: "./e2e/global-setup.ts",
-	globalTeardown: "./e2e/global-teardown.ts",
+	globalSetup: isEndform ? undefined : "./e2e/global-setup.ts",
+	globalTeardown: isEndform ? undefined : "./e2e/global-teardown.ts",
+	// Endform runs the webServer on the CLI machine and proxies loopback
+	// traffic to it from the remote runners.
+	webServer: isEndform
+		? {
+				command: "pnpm exec tsx e2e/endform-server.ts",
+				url: "http://127.0.0.1:4446/ready",
+				env: { EMDASH_E2E_BUILD: "production" },
+				reuseExistingServer: false,
+				timeout: 240_000,
+			}
+		: undefined,
 
 	use: {
 		baseURL: "http://localhost:4444",
-		trace: "on-first-retry",
+		trace: isEndform ? "retain-on-failure" : "on-first-retry",
 		screenshot: "only-on-failure",
 	},
 
-	projects: [
-		{
-			name: "chromium",
-			use: { ...devices["Desktop Chrome"] },
-		},
-	],
-
-	// No webServer — global-setup.ts handles server lifecycle
+	projects: isEndform
+		? [
+				{
+					name: "chromium",
+					testIgnore: [...IGNORED_SPECS, ...EXCLUSIVE_SPECS],
+					use: { ...devices["Desktop Chrome"] },
+				},
+				{
+					name: "exclusive",
+					testMatch: EXCLUSIVE_SPECS,
+					fullyParallel: false,
+					use: { ...devices["Desktop Chrome"] },
+				},
+			]
+		: [
+				{
+					name: "chromium",
+					use: { ...devices["Desktop Chrome"] },
+				},
+			],
 });

@@ -578,13 +578,16 @@ test.describe("Trash and restore content", () => {
 	let headers: Record<string, string>;
 	let baseUrl: string;
 	let postId: string;
+	let postTitle: string;
 
 	test.beforeEach(async ({ admin, serverInfo }) => {
 		await admin.devBypassAuth();
 		baseUrl = serverInfo.baseUrl;
 		headers = apiHeaders(serverInfo.token, baseUrl);
 
-		postId = await createPost(baseUrl, headers, "Trash Test Post", `trash-test-${Date.now()}`);
+		// Both tests find their post by title in a list, so each needs its own.
+		postTitle = `Trash Test Post ${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+		postId = await createPost(baseUrl, headers, postTitle, `trash-test-${Date.now()}`);
 	});
 
 	test.afterEach(async () => {
@@ -596,14 +599,14 @@ test.describe("Trash and restore content", () => {
 		await admin.waitForLoading();
 
 		// Find the row and click the trash button
-		const row = page.locator("tr", { hasText: "Trash Test Post" });
+		const row = page.locator("tr", { hasText: postTitle });
 		await expect(row).toBeVisible({ timeout: 5000 });
-		await row.getByRole("button", { name: "Move Trash Test Post to trash" }).click();
+		await row.getByRole("button", { name: `Move ${postTitle} to trash` }).click();
 
 		// A confirmation dialog should appear
 		const dialog = page.locator('[role="dialog"]').filter({ hasText: "Move to Trash?" });
 		await expect(dialog).toBeVisible({ timeout: 5000 });
-		await expect(dialog.locator("text=Trash Test Post")).toBeVisible();
+		await expect(dialog.getByText(postTitle)).toBeVisible();
 
 		// Confirm the deletion
 		const deleteResponse = page.waitForResponse(
@@ -621,7 +624,7 @@ test.describe("Trash and restore content", () => {
 
 		// The post should no longer appear in the "All" tab
 		await admin.waitForLoading();
-		await expect(page.locator("tr", { hasText: "Trash Test Post" })).not.toBeVisible({
+		await expect(page.locator("tr", { hasText: postTitle })).not.toBeVisible({
 			timeout: 5000,
 		});
 	});
@@ -642,7 +645,7 @@ test.describe("Trash and restore content", () => {
 		await admin.waitForLoading();
 
 		// The trashed post should appear
-		const trashedRow = page.locator("tr", { hasText: "Trash Test Post" });
+		const trashedRow = page.locator("tr", { hasText: postTitle });
 		await expect(trashedRow).toBeVisible({ timeout: 10000 });
 
 		// Click the restore button
@@ -665,7 +668,7 @@ test.describe("Trash and restore content", () => {
 		await admin.waitForLoading();
 
 		// The post should be back in the main list
-		await expect(page.locator("tr", { hasText: "Trash Test Post" })).toBeVisible({
+		await expect(page.locator("tr", { hasText: postTitle })).toBeVisible({
 			timeout: 10000,
 		});
 	});

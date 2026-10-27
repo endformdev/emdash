@@ -10,15 +10,33 @@
  */
 
 import { test, expect } from "../fixtures";
+import type { ServerInfo } from "../fixtures";
 
 // Regex patterns (module scope per lint rules)
 const CONTENT_TYPES_SLUG_PATTERN = /\/content-types\/posts$/;
 
-// Fixed test slug -- sequential tests (workers: 1) share state.
-// Use a fixed value so cross-test dependencies work reliably.
-const TEST_SLUG = "e2e_test_articles";
 const TEST_LABEL_SINGULAR = "Article";
 const TEST_LABEL_PLURAL = `${TEST_LABEL_SINGULAR}s`;
+
+function uniqueSuffix(): string {
+	return `${Date.now().toString(36)}_${Math.floor(Math.random() * 1e9).toString(36)}`;
+}
+
+async function createCollection(serverInfo: ServerInfo, slug: string, label: string) {
+	const response = await fetch(`${serverInfo.baseUrl}/_emdash/api/schema/collections`, {
+		method: "POST",
+		headers: {
+			Authorization: `Bearer ${serverInfo.token}`,
+			"Content-Type": "application/json",
+			Origin: serverInfo.baseUrl,
+			"X-EmDash-Request": "1",
+		},
+		body: JSON.stringify({ slug, label }),
+	});
+	if (!response.ok) {
+		throw new Error(`Creating collection ${slug} failed: ${response.status}`);
+	}
+}
 
 test.describe("Content Types", () => {
 	test.beforeEach(async ({ admin }) => {
@@ -166,6 +184,7 @@ test.describe("Content Types", () => {
 
 	test.describe("Create Content Type", () => {
 		test("creates a new content type and redirects to editor", async ({ admin }) => {
+			const slug = `e2e_articles_${uniqueSuffix()}`;
 			await admin.goto("/content-types/new");
 			await admin.waitForShell();
 			await admin.waitForLoading();
@@ -183,13 +202,13 @@ test.describe("Content Types", () => {
 
 			// Override slug with our unique test slug
 			const slugInput = admin.page.getByLabel("Slug", { exact: true });
-			await slugInput.fill(TEST_SLUG);
+			await slugInput.fill(slug);
 
 			// Submit
 			await admin.page.getByRole("button", { name: "Create Content Type" }).click();
 
 			// Should redirect to the new collection's editor page
-			await expect(admin.page).toHaveURL(new RegExp(`/content-types/${TEST_SLUG}$`), {
+			await expect(admin.page).toHaveURL(new RegExp(`/content-types/${slug}$`), {
 				timeout: 15000,
 			});
 
@@ -197,27 +216,37 @@ test.describe("Content Types", () => {
 			await admin.expectPageTitle(TEST_LABEL_PLURAL);
 		});
 
-		test("new collection appears in the content types list", async ({ admin }) => {
+		test("new collection appears in the content types list", async ({ admin, serverInfo }) => {
+			const suffix = uniqueSuffix();
+			const slug = `e2e_listed_${suffix}`;
+			const label = `Listed ${suffix}`;
+			await createCollection(serverInfo, slug, label);
+
 			await admin.goto("/content-types");
 			await admin.waitForLoading();
 
-			// The collection we created in the previous test should appear (scope to table)
+			// Scope to the table to avoid matching the sidebar link
 			await expect(
-				admin.page.locator("table").getByRole("link", { name: TEST_LABEL_PLURAL, exact: true }),
+				admin.page.locator("table").getByRole("link", { name: label, exact: true }),
 			).toBeVisible({ timeout: 10000 });
 
-			await expect(admin.page.locator("table code", { hasText: TEST_SLUG })).toBeVisible();
+			await expect(admin.page.locator("table code", { hasText: slug })).toBeVisible();
 		});
 	});
 
 	test.describe("Add Field to Content Type", () => {
-		test("adds a text field to the test collection", async ({ admin }) => {
-			await admin.goto(`/content-types/${TEST_SLUG}`);
+		test("adds a text field to the test collection", async ({ admin, serverInfo }) => {
+			const suffix = uniqueSuffix();
+			const slug = `e2e_fields_${suffix}`;
+			const label = `Fields ${suffix}`;
+			await createCollection(serverInfo, slug, label);
+
+			await admin.goto(`/content-types/${slug}`);
 			await admin.waitForShell();
 			await admin.waitForLoading();
 
 			// Wait for the collection editor to fully load
-			await admin.expectPageTitle(TEST_LABEL_PLURAL);
+			await admin.expectPageTitle(label);
 
 			// Click "Add Field" button
 			await admin.page.getByRole("button", { name: "Add Field" }).first().click();
@@ -251,18 +280,23 @@ test.describe("Content Types", () => {
 	});
 
 	test.describe("Delete Content Type", () => {
-		test("deletes the test-created collection", async ({ admin }) => {
+		test("deletes the test-created collection", async ({ admin, serverInfo }) => {
+			const suffix = uniqueSuffix();
+			const slug = `e2e_deleted_${suffix}`;
+			const label = `Deleted ${suffix}`;
+			await createCollection(serverInfo, slug, label);
+
 			await admin.goto("/content-types");
 			await admin.waitForLoading();
 
 			// Verify the test collection exists before deletion
-			await expect(admin.page.locator("table code", { hasText: TEST_SLUG })).toBeVisible({
+			await expect(admin.page.locator("table code", { hasText: slug })).toBeVisible({
 				timeout: 10000,
 			});
 
 			// Find the row for the test collection and click its delete button
-			const row = admin.page.locator("tr").filter({ hasText: TEST_LABEL_PLURAL });
-			await row.getByRole("button", { name: `Delete ${TEST_LABEL_PLURAL}` }).click();
+			const row = admin.page.locator("tr").filter({ hasText: slug });
+			await row.getByRole("button", { name: `Delete ${label}` }).click();
 
 			// Confirm deletion in the dialog
 			const dialog = admin.page.locator('[role="dialog"]');
@@ -271,7 +305,7 @@ test.describe("Content Types", () => {
 
 			// Collection should disappear from the list
 			await admin.waitForLoading();
-			await expect(admin.page.locator("table code", { hasText: TEST_SLUG })).not.toBeVisible({
+			await expect(admin.page.locator("table code", { hasText: slug })).not.toBeVisible({
 				timeout: 10000,
 			});
 		});
