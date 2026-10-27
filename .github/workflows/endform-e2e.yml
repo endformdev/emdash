@@ -22,8 +22,8 @@ jobs:
     timeout-minutes: 40
     permissions:
       contents: read
-      id-token: write
     env:
+      ENDFORM_API_KEY: ${{ secrets.ENDFORM_API_KEY_JOXDCDJD }}
       EMDASH_ENDFORM_CONCURRENCY: ${{ inputs.concurrency || '64' }}
       ENDFORM_GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
       ENDFORM_GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
