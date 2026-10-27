@@ -12,6 +12,7 @@
 
 import { writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { Page } from "@playwright/test";
 
@@ -29,7 +30,7 @@ const UPLOAD_BUTTON_PATTERN = /Upload/;
 const BROWSE_FILES_LABEL = "Browse files to upload";
 // ---------- helpers ----------
 
-const TEST_ASSETS_DIR = join(process.cwd(), "e2e/fixtures/assets");
+const TEST_ASSETS_DIR = fileURLToPath(new URL("../fixtures/assets", import.meta.url));
 
 function ensureTestImage(): string {
 	if (!existsSync(TEST_ASSETS_DIR)) mkdirSync(TEST_ASSETS_DIR, { recursive: true });

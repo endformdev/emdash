@@ -10,6 +10,7 @@
  */
 
 import { test, expect } from "../fixtures";
+import type { ServerInfo } from "../fixtures";
 
 // Regex patterns
 // Edit-route navigation preserves the entry's locale as a `?locale=` search
@@ -17,6 +18,22 @@ import { test, expect } from "../fixtures";
 const CONTENT_EDIT_URL_PATTERN = /\/content\/posts\/[A-Z0-9]+(?:\?.*)?$/;
 const CONTENT_ID_PATTERN = /\/content\/posts\/[A-Z0-9]+(?:\?.*)?$/;
 const NEW_CONTENT_URL_PATTERN = /\/content\/posts\/new(?:[?#].*)?$/;
+
+async function createPost(serverInfo: ServerInfo, title: string): Promise<string> {
+	const response = await fetch(`${serverInfo.baseUrl}/_emdash/api/content/posts`, {
+		method: "POST",
+		headers: {
+			Authorization: `Bearer ${serverInfo.token}`,
+			"Content-Type": "application/json",
+			Origin: serverInfo.baseUrl,
+			"X-EmDash-Request": "1",
+		},
+		body: JSON.stringify({ data: { title } }),
+	});
+	if (!response.ok) throw new Error(`Creating post failed: ${response.status}`);
+	const { data } = (await response.json()) as { data: { item: { id: string } } };
+	return data.item.id;
+}
 
 test.describe("Content CRUD", () => {
 	test.beforeEach(async ({ admin }) => {
@@ -155,13 +172,10 @@ test.describe("Content CRUD", () => {
 			await expect(admin.page.locator("#field-title")).toHaveValue("First Post");
 		});
 
-		test("saves updated content", async ({ admin }) => {
-			// Navigate to existing content
-			await admin.goToContent("posts");
-			await admin.waitForLoading();
-
-			// Click first item to edit
-			await admin.page.getByRole("link", { name: "First Post", exact: true }).click();
+		test("saves updated content", async ({ admin, serverInfo }) => {
+			// Edit a post of its own: other tests expect the seeded posts unchanged.
+			const id = await createPost(serverInfo, `Editable Post ${Date.now()}`);
+			await admin.goToEditContent("posts", id);
 			await admin.waitForLoading();
 
 			// Update title

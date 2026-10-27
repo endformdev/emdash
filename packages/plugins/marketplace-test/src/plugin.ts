@@ -1218,6 +1218,20 @@ const plugin: SandboxedPlugin = {
 						events: { items: Array.from(found, ([id, data]) => ({ id, data })) },
 					};
 				}
+				const types = isRecord(route.input) ? route.input.types : undefined;
+				if (Array.isArray(types)) {
+					const items = [];
+					let cursor: string | undefined;
+					do {
+						// oxlint-disable-next-line no-await-in-loop -- each page needs the previous cursor
+						const page = await ctx.storage.events.query({ limit: 100, cursor });
+						for (const item of page.items) {
+							if (isRecord(item.data) && types.includes(item.data.type)) items.push(item);
+						}
+						cursor = page.hasMore ? page.cursor : undefined;
+					} while (cursor);
+					return { events: { items } };
+				}
 				return {
 					events: await ctx.storage.events.query({ limit: 100 }),
 					lifecycle: await ctx.storage.lifecycle.query({ limit: 100 }),
