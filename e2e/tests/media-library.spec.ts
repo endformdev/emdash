@@ -7,13 +7,14 @@
 
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { Locator, Page } from "@playwright/test";
 
 import { test, expect, type ServerInfo } from "../fixtures";
 
 // Create a test image for uploads
-const TEST_ASSETS_DIR = join(process.cwd(), "e2e/fixtures/assets");
+const TEST_ASSETS_DIR = fileURLToPath(new URL("../fixtures/assets", import.meta.url));
 
 // Regex patterns
 const MEDIA_API_RESPONSE_PATTERN = /\/api\/media/;
@@ -81,7 +82,9 @@ async function uploadCropTestImage(page: Page, filename: string) {
 	await dialog.getByLabel(BROWSE_FILES_LABEL).setInputFiles({
 		name: filename,
 		mimeType: "image/png",
-		buffer: CROP_TEST_PNG,
+		// Uploads are deduplicated by content hash, so unique bytes keep each
+		// upload its own media item.
+		buffer: Buffer.concat([CROP_TEST_PNG, Buffer.from(filename)]),
 	});
 	await expect(dialog.getByText("Complete", { exact: true })).toBeVisible();
 	await dialog.getByRole("button", { name: "Done" }).click();
@@ -146,24 +149,33 @@ async function createFolder(page: Page, name: string) {
 	await expect(dialog).not.toBeVisible();
 }
 
+async function boxCenter(locator: Locator) {
+	const box = await locator.boundingBox();
+	if (!box) throw new Error("Drag source or target is not visible");
+	return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}
+
 async function pointerDrag(page: Page, source: Locator, target: Locator) {
-	const sourceBox = await source.boundingBox();
-	const targetBox = await target.boundingBox();
-	if (!sourceBox || !targetBox) throw new Error("Drag source or target is not visible");
-	const sourcePoint = {
-		x: sourceBox.x + sourceBox.width / 2,
-		y: sourceBox.y + sourceBox.height / 2,
-	};
-	const targetPoint = {
-		x: targetBox.x + targetBox.width / 2,
-		y: targetBox.y + targetBox.height / 2,
-	};
+	// Starting a drag near the viewport edge triggers the drag library's
+	// auto-scroll, which moves the target away from coordinates measured earlier.
+	await source.evaluate((element) => element.scrollIntoView({ block: "center" }));
+	const sourcePoint = await boxCenter(source);
+	let targetPoint = await boxCenter(target);
 	await page.mouse.move(sourcePoint.x, sourcePoint.y);
 	await page.mouse.down();
 	await page.mouse.move(sourcePoint.x + 12, sourcePoint.y, { steps: 2 });
 	await page.mouse.move(targetPoint.x, targetPoint.y, { steps: 8 });
 	const overlayCard = page.locator("[data-media-drag-overlay] > *");
 	await overlayCard.waitFor();
+	await expect
+		.poll(async () => {
+			const current = await boxCenter(target);
+			const moved = Math.hypot(current.x - targetPoint.x, current.y - targetPoint.y) > 1;
+			targetPoint = current;
+			if (moved) await page.mouse.move(current.x, current.y, { steps: 2 });
+			return moved;
+		})
+		.toBe(false);
 	const overlayBox = await overlayCard.boundingBox();
 	if (!overlayBox) throw new Error("Drag overlay is not visible");
 	expect(Math.abs(overlayBox.x + overlayBox.width / 2 - targetPoint.x)).toBeLessThanOrEqual(4);
@@ -489,7 +501,8 @@ test.describe("Media Library", () => {
 		await page.setViewportSize({ width: 320, height: 800 });
 		await page.getByRole("button", { name: /browse for Featured Image/i }).click();
 		const picker = page.getByRole("dialog", { name: "Select Featured Image" });
-		await picker.getByRole("button", { name: "test-image.png", exact: true }).click();
+		// Other tests upload their own copies of test-image.png.
+		await picker.getByRole("button", { name: "test-image.png", exact: true }).first().click();
 		await picker.getByRole("button", { name: "Select", exact: true }).click();
 
 		const featuredImageField = page.locator("#field-featured_image");
@@ -895,6 +908,7 @@ test.describe("Media Library", () => {
 		await expect(page.locator("[data-media-library]")).not.toHaveAttribute("aria-busy", "true");
 		const rtlSearch = page.locator('input[type="search"]');
 		await rtlSearch.fill(longFolderName);
+		await expect(page.locator("[data-media-library]")).not.toHaveAttribute("aria-busy", "true");
 		const longFolderText = page
 			.locator('[data-media-folder-card] [dir="auto"]')
 			.filter({ hasText: longFolderName });
@@ -911,6 +925,7 @@ test.describe("Media Library", () => {
 
 		await longFolderText.locator("xpath=ancestor::a[1]").click();
 		await expect(page).toHaveURL(/\/media\?folder=/);
+		await expect(page.locator("[data-media-library]")).not.toHaveAttribute("aria-busy", "true");
 		const currentBidiName = page.locator('[aria-current="page"] [dir="auto"]').first();
 		await expect(currentBidiName).toBeVisible();
 		const currentBidiMetrics = await currentBidiName.evaluate((element) => ({
@@ -944,10 +959,11 @@ test.describe("Media Library", () => {
 		await createFolder(page, `Press ${Date.now()}`);
 
 		const mediaGrid = page.locator("[data-media-grid]");
-		const originalImage = mediaGrid.locator("img").first();
+		const uploaded = mediaGrid.getByRole("button", { name: uniqueFilename, exact: true });
+		const originalImage = uploaded.locator("img");
 		await expect(originalImage).toBeVisible();
 		const originalSrc = await originalImage.getAttribute("src");
-		await mediaGrid.locator("button").first().click();
+		await uploaded.click();
 
 		const details = page.getByRole("dialog", { name: "Media details" });
 		await details.getByRole("combobox", { name: "Location" }).click();
@@ -960,7 +976,7 @@ test.describe("Media Library", () => {
 
 		await page.getByRole("link", { name: `Open folder ${folderName}` }).click();
 		await expect(page).toHaveURL(/\/media\?folder=/);
-		await expect(mediaGrid.locator("img").first()).toHaveAttribute("src", originalSrc!);
+		await expect(originalImage).toHaveAttribute("src", originalSrc!);
 		const mediaLibrary = page.locator("[data-media-library]");
 		const pageSize = page.getByRole("combobox", { name: "Page size" });
 		await expect(mediaLibrary).not.toHaveAttribute("aria-busy", "true");
@@ -1015,7 +1031,7 @@ test.describe("Media Library", () => {
 			await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
 		).toBe(true);
 		await page.reload();
-		await expect(mediaGrid.locator("img").first()).toHaveAttribute("src", originalSrc!);
+		await expect(originalImage).toHaveAttribute("src", originalSrc!);
 		await page.route("**/_emdash/api/media/folders?**", async (route) => {
 			await new Promise((resolve) => setTimeout(resolve, 1200));
 			await route.continue();
@@ -1081,6 +1097,6 @@ test.describe("Media Library", () => {
 
 		await expect(page).toHaveURL(/\/media\/?$/);
 		await page.getByRole("button", { name: "Clear search" }).click();
-		await expect(mediaGrid.locator("img").first()).toHaveAttribute("src", originalSrc!);
+		await expect(originalImage).toHaveAttribute("src", originalSrc!);
 	});
 });

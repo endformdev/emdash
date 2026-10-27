@@ -86,6 +86,10 @@ test.describe("Accessibility Audit", () => {
 
 			const metricCards = admin.page.getByTestId("dashboard-metric");
 			await expect.poll(() => metricCards.count()).toBeGreaterThanOrEqual(3);
+			// Metric values load after their cards render.
+			for (const value of await admin.page.getByTestId("dashboard-metric-value").all()) {
+				await expect(value).not.toBeEmpty();
+			}
 
 			const layout = await admin.page.locator("main").evaluate((main) => {
 				const textStart = (element: Element) => {

@@ -6,7 +6,7 @@
  * the AdminPage helper and server context to each test.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -17,6 +17,7 @@ import { AdminPage } from "./admin";
 export { AdminPage } from "./admin";
 
 const SERVER_INFO_PATH = join(tmpdir(), "emdash-pw-server.json");
+export const ENDFORM_SERVER_INFO_URL = "http://127.0.0.1:4446/server-info";
 
 export interface ServerInfo {
 	pid: number;
@@ -40,7 +41,22 @@ function getServerInfo(): ServerInfo {
 export const test = base.extend<{
 	admin: AdminPage;
 	serverInfo: ServerInfo;
+	endformServerInfo: void;
 }>({
+	// On Endform the server runs on the CLI machine (see e2e/endform-server.ts);
+	// copy its server info into this runner's temp file before each test.
+	endformServerInfo: [
+		// oxlint-disable-next-line no-empty-pattern -- Playwright requires destructured fixture dependencies
+		async ({}, use) => {
+			if (process.env.ENDFORM === "true") {
+				const response = await fetch(ENDFORM_SERVER_INFO_URL);
+				if (!response.ok) throw new Error(`Server info unavailable (${response.status})`);
+				writeFileSync(SERVER_INFO_PATH, await response.text());
+			}
+			await use();
+		},
+		{ auto: true },
+	],
 	// eslint-disable-next-line no-empty-pattern
 	serverInfo: async ({}, use) => {
 		await use(getServerInfo());

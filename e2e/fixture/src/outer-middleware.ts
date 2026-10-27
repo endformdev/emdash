@@ -1,5 +1,15 @@
+import { readFileSync } from "node:fs";
+
 import { defineMiddleware } from "astro:middleware";
+import { installRegistryAuthoritativeFixture } from "emdash/internal/testing/registry";
 import { getRequestContext } from "emdash/request-context";
+
+// astro.config.mjs installs the fixture for `astro dev`; a production server
+// never runs the config, so install it here at startup.
+const registryFixturePath = process.env.EMDASH_REGISTRY_FIXTURE;
+if (!import.meta.env.DEV && registryFixturePath) {
+	installRegistryAuthoritativeFixture(JSON.parse(readFileSync(registryFixturePath, "utf8")));
+}
 
 const FINALIZER_NONCE = "outer-finalizer";
 

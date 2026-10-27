@@ -6,6 +6,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { ENDFORM_SERVER_INFO_URL } from "./index";
+
 const SERVER_INFO_PATH = join(tmpdir(), "emdash-pw-server.json");
 
 export async function refreshServerPatAfterDevBypass(baseUrl: string): Promise<void> {
@@ -21,4 +23,12 @@ export async function refreshServerPatAfterDevBypass(baseUrl: string): Promise<v
 	const info = JSON.parse(readFileSync(SERVER_INFO_PATH, "utf-8"));
 	info.token = token;
 	writeFileSync(SERVER_INFO_PATH, JSON.stringify(info, null, 2));
+	if (process.env.ENDFORM === "true") {
+		const update = await fetch(ENDFORM_SERVER_INFO_URL, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ token }),
+		});
+		if (!update.ok) throw new Error(`Server info update failed (${update.status})`);
+	}
 }

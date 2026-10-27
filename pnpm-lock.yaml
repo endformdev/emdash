@@ -374,6 +374,9 @@ importers:
       emdash:
         specifier: workspace:*
         version: link:packages/core
+      endform:
+        specifier: 0.81.5
+        version: 0.81.5
       knip:
         specifier: ^5.84.1
         version: 5.84.1(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@24.10.13)(typescript@6.0.0-beta)
@@ -395,6 +398,9 @@ importers:
       prettier-plugin-astro:
         specifier: ^0.14.1
         version: 0.14.1
+      tsx:
+        specifier: 4.21.0
+        version: 4.21.0
       typescript:
         specifier: 6.0.0-beta
         version: 6.0.0-beta
@@ -1145,6 +1151,9 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.2.4(react@19.2.4)
+      sharp:
+        specifier: ^0.35.4
+        version: 0.35.4(@types/node@26.1.1)
 
   e2e/fixture-cloudflare:
     dependencies:
@@ -9495,6 +9504,40 @@ packages:
 
   end-of-stream@1.4.5:
     resolution: {integrity: sha512-ooEGc6HP26xXq/N+GCGOT0JKCLDGrq2bQUZrQ7gyrJiZANJ/8YDTxTpQBXGMn+WbIQXNVpyWymm7KYVICQnyOg==}
+
+  endform-darwin-arm64@0.81.5:
+    resolution: {integrity: sha512-+lODLjRXR2mgh9djn4hGlRrOAs6FZWl6Uy5VvnqmqhWvj7EZZ0TFDaO4PDavqkTu4azexn8t+wwFQmbprbYVxw==}
+    cpu: [arm64]
+    os: [darwin]
+
+  endform-darwin-x86@0.81.5:
+    resolution: {integrity: sha512-bIdlYSQ6owQhb093fH9aadTPwZl/Jt2NtRFUgNVwNtnNmnCJAhoMMtdw2h+Xqfp+vvQ2unIyNMDO9rbTwdIqjA==}
+    cpu: [x64]
+    os: [darwin]
+
+  endform-linux-arm64@0.81.5:
+    resolution: {integrity: sha512-r3aqkLWohnT01Cmc1zjmgSI80rTRjWJzxmJGaKBQAL45h08VluKvV/LGBpc6FkIeGqhpTECu7MjUv9/Km24fAg==}
+    cpu: [arm64]
+    os: [linux]
+
+  endform-linux-x86@0.81.5:
+    resolution: {integrity: sha512-l2ehMvjLIE/m0skqvRV0pXNZW0Vqhs4vswOxVbIt5W6KsX7+uoqd3/D6c49CIjMQeadOHIFihAWu35vgsRykXg==}
+    cpu: [x64]
+    os: [linux]
+
+  endform-win32-arm64@0.81.5:
+    resolution: {integrity: sha512-HI7WqWGFhEIJbOKYS17ISxKjb6PjosiOKcxxGXFt2yY8B4dUjSvYdKNQKaHU0ZmvB26z0kQ6eWsrhyPrO+H0DA==}
+    cpu: [arm64]
+    os: [win32]
+
+  endform-win32-x86@0.81.5:
+    resolution: {integrity: sha512-CSsiG4m7C62qCVw/UoizPC0mbPZmN0qydKW/6auW66gglB9VO51+daBPbSsR8g4d3CrTFwFv6saQ51AVsj02Tg==}
+    cpu: [x64]
+    os: [win32]
+
+  endform@0.81.5:
+    resolution: {integrity: sha512-8oOSOy8AzXnAO6Wwt1qMLdTbbCU/lWgorAVkCBKf2o5zbdVMJmkkkhv+5Ri99jhfojulu2lpjD04sWw/Pm5Lzg==}
+    hasBin: true
 
   enhanced-resolve@5.24.2:
     resolution: {integrity: sha512-rpsZEGT1jFuve6QlpyRp9ckQ+kN61hvF9BzCPyMdaKTm8UJce96KBn3sorXOFXlzjPrs3Vc4T1NsSroZ3PxlFw==}
@@ -19607,6 +19650,33 @@ snapshots:
       once: 1.4.0
     optional: true
 
+  endform-darwin-arm64@0.81.5:
+    optional: true
+
+  endform-darwin-x86@0.81.5:
+    optional: true
+
+  endform-linux-arm64@0.81.5:
+    optional: true
+
+  endform-linux-x86@0.81.5:
+    optional: true
+
+  endform-win32-arm64@0.81.5:
+    optional: true
+
+  endform-win32-x86@0.81.5:
+    optional: true
+
+  endform@0.81.5:
+    optionalDependencies:
+      endform-darwin-arm64: 0.81.5
+      endform-darwin-x86: 0.81.5
+      endform-linux-arm64: 0.81.5
+      endform-linux-x86: 0.81.5
+      endform-win32-arm64: 0.81.5
+      endform-win32-x86: 0.81.5
+
   enhanced-resolve@5.24.2:
     dependencies:
       graceful-fs: 4.2.11
@@ -19720,7 +19790,6 @@ snapshots:
       '@esbuild/win32-arm64': 0.27.7
       '@esbuild/win32-ia32': 0.27.7
       '@esbuild/win32-x64': 0.27.7
-    optional: true
 
   esbuild@0.28.1:
     optionalDependencies:
@@ -20053,7 +20122,6 @@ snapshots:
   get-tsconfig@4.14.3:
     dependencies:
       resolve-pkg-maps: 1.0.0
-    optional: true
 
   get-tsconfig@5.0.0-beta.4:
     dependencies:
@@ -22366,7 +22434,6 @@ snapshots:
       '@img/sharp-win32-ia32': 0.35.4
       '@img/sharp-win32-x64': 0.35.4
       '@types/node': 26.1.1
-    optional: true
 
   shebang-command@2.0.0:
     dependencies:
@@ -22736,7 +22803,6 @@ snapshots:
       get-tsconfig: 4.14.3
     optionalDependencies:
       fsevents: 2.3.3
-    optional: true
 
   tunnel-agent@0.6.0:
     dependencies:
