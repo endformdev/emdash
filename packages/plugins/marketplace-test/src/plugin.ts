@@ -1207,10 +1207,36 @@ const plugin: SandboxedPlugin = {
 			},
 		},
 		"events-list": {
-			handler: async (_route, ctx) => ({
-				events: await ctx.storage.events.query({ limit: 100 }),
-				lifecycle: await ctx.storage.lifecycle.query({ limit: 100 }),
-			}),
+			handler: async (route, ctx) => {
+				const ids =
+					typeof route.input === "object" && route.input !== null && "ids" in route.input
+						? route.input.ids
+						: undefined;
+				if (Array.isArray(ids) && ids.every((id) => typeof id === "string")) {
+					const found = await ctx.storage.events.getMany(ids);
+					return {
+						events: { items: Array.from(found, ([id, data]) => ({ id, data })) },
+					};
+				}
+				const types = isRecord(route.input) ? route.input.types : undefined;
+				if (Array.isArray(types)) {
+					const items = [];
+					let cursor: string | undefined;
+					do {
+						// oxlint-disable-next-line no-await-in-loop -- each page needs the previous cursor
+						const page = await ctx.storage.events.query({ limit: 100, cursor });
+						for (const item of page.items) {
+							if (isRecord(item.data) && types.includes(item.data.type)) items.push(item);
+						}
+						cursor = page.hasMore ? page.cursor : undefined;
+					} while (cursor);
+					return { events: { items } };
+				}
+				return {
+					events: await ctx.storage.events.query({ limit: 100 }),
+					lifecycle: await ctx.storage.lifecycle.query({ limit: 100 }),
+				};
+			},
 		},
 		"private-user": {
 			permission: "content:edit_any",

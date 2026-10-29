@@ -7,6 +7,16 @@
 
 import { test, expect } from "../fixtures";
 
+// Tests run in parallel against one site. Each test's paths live under its own
+// prefix, so its redirects can't form loops with another test's, and cleanup
+// removes only the redirects it created.
+let prefix = "";
+let createdIds: string[] = [];
+
+function p(path: string): string {
+	return `${prefix}${path}`;
+}
+
 function apiHeaders(token: string, baseUrl: string) {
 	return {
 		"Content-Type": "application/json",
@@ -27,12 +37,13 @@ async function create(
 ): Promise<string> {
 	const res = await page.request.post(`${baseUrl}/_emdash/api/redirects`, {
 		headers: apiHeaders(token, baseUrl),
-		data: { source, destination, ...options },
+		data: { source: p(source), destination: p(destination), ...options },
 	});
 	const body = await res.json();
 	if (!res.ok()) {
 		return body.error?.message ?? "unknown error";
 	}
+	createdIds.push(body.data.id);
 	return body.data.id;
 }
 
@@ -46,7 +57,7 @@ async function createExpectError(
 ): Promise<string> {
 	const res = await page.request.post(`${baseUrl}/_emdash/api/redirects`, {
 		headers: apiHeaders(token, baseUrl),
-		data: { source, destination },
+		data: { source: p(source), destination: p(destination) },
 	});
 	expect(res.ok(), `Expected rejection for ${source} → ${destination}`).toBe(false);
 	const body = await res.json();
@@ -63,33 +74,33 @@ async function createExpectSuccess(
 ): Promise<void> {
 	const res = await page.request.post(`${baseUrl}/_emdash/api/redirects`, {
 		headers: apiHeaders(token, baseUrl),
-		data: { source, destination },
+		data: { source: p(source), destination: p(destination) },
 	});
 	const body = await res.json();
 	expect(res.ok(), `Expected success for ${source} → ${destination}: ${JSON.stringify(body)}`).toBe(
 		true,
 	);
+	createdIds.push(body.data.id);
 }
 
-/** Delete all redirects */
+/** Delete the redirects this test created */
 async function cleanup(
 	page: import("@playwright/test").Page,
 	baseUrl: string,
 	token: string,
 ): Promise<void> {
 	const headers = apiHeaders(token, baseUrl);
-	const res = await page.request.get(`${baseUrl}/_emdash/api/redirects`, { headers });
-	if (!res.ok()) return;
-	const data = await res.json();
-	for (const item of data.data?.items ?? []) {
-		await page.request.delete(`${baseUrl}/_emdash/api/redirects/${item.id}`, { headers });
+	for (const id of createdIds) {
+		await page.request.delete(`${baseUrl}/_emdash/api/redirects/${id}`, { headers });
 	}
+	createdIds = [];
 }
 
 test.describe("redirect loop detection", () => {
-	test.beforeEach(async ({ admin, page, serverInfo }) => {
+	test.beforeEach(async ({ admin }, testInfo) => {
+		prefix = `/t-${testInfo.testId}-${testInfo.retry}`;
+		createdIds = [];
 		await admin.devBypassAuth();
-		await cleanup(page, serverInfo.baseUrl, serverInfo.token);
 	});
 
 	test.afterEach(async ({ page, serverInfo }) => {
@@ -152,7 +163,7 @@ test.describe("redirect loop detection", () => {
 
 		const res = await page.request.put(`${baseUrl}/_emdash/api/redirects/${id}`, {
 			headers,
-			data: { destination: "/a" },
+			data: { destination: p("/a") },
 		});
 		expect(res.ok()).toBe(false);
 		const body = await res.json();
@@ -167,7 +178,7 @@ test.describe("redirect loop detection", () => {
 
 		const res = await page.request.put(`${baseUrl}/_emdash/api/redirects/${id}`, {
 			headers,
-			data: { destination: "/d" },
+			data: { destination: p("/d") },
 		});
 		expect(res.ok()).toBe(true);
 	});
@@ -183,7 +194,7 @@ test.describe("redirect loop detection", () => {
 
 		const res = await page.request.put(`${baseUrl}/_emdash/api/redirects/${id}`, {
 			headers,
-			data: { source: "/b", destination: "/a" },
+			data: { source: p("/b"), destination: p("/a") },
 		});
 		expect(res.ok()).toBe(false);
 		const body = await res.json();
@@ -201,7 +212,7 @@ test.describe("redirect loop detection", () => {
 
 		const res = await page.request.put(`${baseUrl}/_emdash/api/redirects/${id}`, {
 			headers,
-			data: { destination: "/a", enabled: true },
+			data: { destination: p("/a"), enabled: true },
 		});
 		expect(res.ok()).toBe(false);
 		const body = await res.json();

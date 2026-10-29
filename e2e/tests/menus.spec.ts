@@ -7,6 +7,8 @@
 
 import { test, expect } from "../fixtures";
 
+const MENUS_LIST_URL = /\/_emdash\/api\/menus(\?.*)?$/;
+
 test.describe("Menus", () => {
 	test.beforeEach(async ({ admin }) => {
 		await admin.devBypassAuth();
@@ -24,7 +26,13 @@ test.describe("Menus", () => {
 			await expect(admin.page.getByRole("button", { name: "Create Menu" }).first()).toBeVisible();
 		});
 
-		test("shows empty state when no menus", async ({ admin }) => {
+		test("shows empty state when no menus", async ({ admin, page }) => {
+			// Other tests create menus at the same time, so serve an empty list.
+			await page.route(MENUS_LIST_URL, (route) =>
+				route.request().method() === "GET"
+					? route.fulfill({ json: { data: [] } })
+					: route.continue(),
+			);
 			await admin.goToMenus();
 			await admin.waitForLoading();
 

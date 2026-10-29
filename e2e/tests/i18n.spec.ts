@@ -242,11 +242,12 @@ test.describe("i18n", () => {
 			await expect(currentMarker).toBeVisible();
 		});
 
-		test("shows Translate buttons for missing locales", async ({ admin }) => {
-			await admin.goToContent("posts");
-			await admin.waitForLoading();
-
-			await admin.page.locator("table tbody tr a").first().click();
+		test("shows Translate buttons for missing locales", async ({ admin, serverInfo }) => {
+			const post = await createPublishedPost(serverInfo.baseUrl, serverInfo.token, {
+				title: "Untranslated post",
+				slug: `untranslated-${Date.now()}`,
+			});
+			await admin.goToEditContent("posts", post.id);
 			await admin.waitForLoading();
 
 			// FR and ES should have "Translate" buttons since no translations exist yet
